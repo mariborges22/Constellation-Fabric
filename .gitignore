@@ -1,0 +1,31 @@
+# Na raiz do seu projeto
+cat > .gitignore << 'EOF'
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+.terraformrc
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variáveis locais
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Arquivos de cache
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.iml
+EOF
