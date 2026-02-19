@@ -1,4 +1,4 @@
-ariable "project_name" {
+variable "project_name" {
   type        = string
   description = "Nome do projeto para identificação dos recursos"
 }

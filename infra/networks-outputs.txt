@@ -1,0 +1,6 @@
+﻿NETWORKS MODULE OUTPUTS
+=======================
+VPC us-east-1: vpc-0a32cc83e6c659e5b
+ALB us-east-1 DNS: constellation-fabric-us-east-1-a-2070272044.us-east-1.elb.amazonaws.com
+VPC eu-west-1: vpc-0a6d6864c77c0c9de
+ALB eu-west-1 DNS: constellation-fabric-eu-west-1-a-1169085611.eu-west-1.elb.amazonaws.com

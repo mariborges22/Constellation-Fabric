@@ -29,3 +29,9 @@ override.tf.json
 .idea/
 *.iml
 EOF
+
+*oidc-role-arn.txt
+
+# JWT Keys
+*jwt_private.pem
+*jwt_public.pem

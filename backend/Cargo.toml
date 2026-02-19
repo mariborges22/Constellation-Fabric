@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "crates/auth",
+    "shared",
+]
+resolver = "2"
