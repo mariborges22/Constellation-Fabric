@@ -1,5 +1,3 @@
-# Na raiz do seu projeto
-cat > .gitignore << 'EOF'
 # Terraform
 *.tfstate
 *.tfstate.*
@@ -11,10 +9,15 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+tfplan
+*.tfplan
+.tfplan
 
-# Variáveis locais
+# Variaveis locais
 *.auto.tfvars
 *.auto.tfvars.json
+.env
+.env.*
 
 # Arquivos de cache
 .DS_Store
@@ -28,10 +31,13 @@ override.tf.json
 .vscode/
 .idea/
 *.iml
-EOF
 
+# Secretos e Chaves (Seguranca Critica)
 *oidc-role-arn.txt
-
-# JWT Keys
-*jwt_private.pem
-*jwt_public.pem
+*.pem
+*.key
+*.csv
+*accessKeys*
+*credentials*
+aws_access_key_id.txt
+aws_secret_access_key.txt

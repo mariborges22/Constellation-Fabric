@@ -1,0 +1,41 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Plan
+        run: |
+          cd infra/enviroments/staging
+          terraform init
+          terraform plan -no-color
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Terraform plan completed. Review above.'
+            });

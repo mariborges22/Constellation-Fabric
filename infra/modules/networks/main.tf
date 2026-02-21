@@ -143,3 +143,17 @@ resource "aws_globalaccelerator_listener" "game_listener" {
     to_port   = 443
   }
 }
+
+# ============================================================
+# ALB LISTENER - HTTP ONLY (CloudFlare faz HTTPS)
+# ============================================================
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.game_alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.game_tg.arn
+  }
+}

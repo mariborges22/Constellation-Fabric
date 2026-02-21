@@ -1,0 +1,36 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'infra/**'
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Apply
+        run: |
+          cd infra/enviroments/staging
+          terraform init
+          terraform plan -out=tfplan
+          terraform apply -no-color tfplan
+
+      - name: Notify Success
+        run: echo "✅ Terraform apply completed successfully"
