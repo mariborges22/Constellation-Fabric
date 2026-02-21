@@ -8,9 +8,16 @@ pub mod handlers;
 pub mod middleware;
 pub mod state;
 
+// AppState definition
+#[derive(Clone)]
+pub struct AppState {
+    pub version: String,
+    pub rate_limiter: rate_limit::RateLimiter,
+    pub bot_detector: bot_detection::BotDetector,
+}
+
 // Re-exportar tipos principais
-pub use state::AppState;
-pub use models::{LoginRequest, LoginResponse, ErrorResponse};
+pub use models::{LoginRequest, LoginResponse, ErrorResponse, RefreshResponse, RefreshRequest};
 pub use security::sanitizer::sanitize_input;
 pub use security::validator::validate_token_format;
 pub use rate_limit::RateLimiter;
