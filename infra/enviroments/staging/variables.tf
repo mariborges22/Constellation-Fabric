@@ -12,4 +12,9 @@ variable "vpc_cidr" {
   type        = string
   description = "CIDR da VPC"
 }
+
+variable "domain_name" {
+  type        = string
+  description = "Domínio principal"
+  default     = "constellation-fabric.com"
 }

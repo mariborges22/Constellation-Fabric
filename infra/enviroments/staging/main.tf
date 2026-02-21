@@ -39,3 +39,17 @@ module "compute" {
 
   project_name = var.project_name
 }
+
+# module "https" {
+#   source = "../../modules/https"
+# 
+#   domain_name         = var.domain_name
+#   acm_certificate_arn = var.acm_certificate_arn
+#   route53_zone_id     = var.route53_zone_id
+#   
+#   alb_arn             = module.networks_us.alb_arn
+#   alb_dns_name        = module.networks_us.alb_dns_name
+#   alb_zone_id         = module.networks_us.alb_zone_id
+#   target_group_arn    = module.networks_us.target_group_arn
+# }
+

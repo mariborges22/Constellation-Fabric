@@ -16,16 +16,29 @@ output "vpc_eu_west_id" {
   value = module.networks_eu.vpc_id
 }
 
-output "alb_us_dns" {
-  value = module.networks_us.alb_dns_name
+# ALB DNS Names (pra usar no CloudFlare)
+output "alb_dns_us" {
+  value       = module.networks_us.alb_dns_name
+  description = "ALB DNS name (us-east-1)"
 }
 
-output "alb_eu_dns" {
-  value = module.networks_eu.alb_dns_name
+output "alb_dns_eu" {
+  value       = module.networks_eu.alb_dns_name
+  description = "ALB DNS name (eu-west-1)"
 }
 
-output "accelerator_ips" {
-  value = concat(module.networks_us.accelerator_ips, module.networks_eu.accelerator_ips)
+output "alb_url_us" {
+  value       = "http://${module.networks_us.alb_dns_name}"
+  description = "ALB URL (us-east-1)"
+}
+
+output "alb_url_eu" {
+  value       = "http://${module.networks_eu.alb_dns_name}"
+  description = "ALB URL (eu-west-1)"
+}
+
+output "cloudflare_instructions" {
+  value = "Add these to CloudFlare DNS:\n- game.constellation.com → ${module.networks_us.alb_dns_name}\n- api.constellation.com → ${module.networks_us.alb_dns_name}\n- auth.constellation.com → ${module.networks_us.alb_dns_name}\n- game-eu.constellation.com → ${module.networks_eu.alb_dns_name}"
 }
 
 output "grafana_url" {
@@ -39,3 +52,17 @@ output "tempo_endpoint" {
 output "prometheus_url" {
   value = module.monitoring.prometheus_url
 }
+
+# ECR repositórios
+output "ecr_auth_uri" {
+  value = module.compute.repository_url_auth
+}
+
+output "ecr_combat_uri" {
+  value = module.compute.repository_url_combat
+}
+
+output "ecr_event_publisher_uri" {
+  value = module.compute.repository_url_event_publisher
+}
+
