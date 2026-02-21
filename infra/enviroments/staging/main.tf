@@ -2,7 +2,7 @@ module "security" {
   source = "../../modules/security"
 
   project_name = var.project_name
-  github_repo  = "mariborges22/constellation-fabric"
+  github_repo  = "mariborges22/Constellation-Fabric"
 }
 
 module "networks_us" {
