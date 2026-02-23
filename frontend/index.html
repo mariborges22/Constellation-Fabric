@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constellation Fabric - Game Client</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div id="stats">
+                <p>Latência: <span id="ping">0</span>ms</p>
+                <p>Posição: <span id="coords">(0, 0)</span></p>
+                <p>Elemento: <span id="active-element">Anemo</span></p>
+            </div>
+            <div id="party">
+                <div class="char active" id="char1">1 (Anemo)</div>
+                <div class="char" id="char2">2 (Pyro)</div>
+                <div class="char" id="char3">3 (Electro)</div>
+                <div class="char" id="char4">4 (Hydro)</div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -27,8 +27,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Validation - Cargo Check
+        run: cargo check --manifest-path backend/Cargo.toml
+
+      - name: Validation - Unit Tests
+        run: cargo test --manifest-path backend/Cargo.toml
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Build Local Image for Smoke Test
+        run: |
+          docker build -t smoke-test ./backend
+          
+      - name: Validation - Container Smoke Test
+        run: |
+          docker run -d --name smoke-test-run -p 8080:8080 smoke-test
+          sleep 5
+          # Simple check to see if the process is still running and answering (even if 4xx/5xx)
+          curl -f http://localhost:8080/health || (docker logs smoke-test-run && exit 1)
+          docker rm -f smoke-test-run
 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4

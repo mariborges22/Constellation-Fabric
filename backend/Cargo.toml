@@ -1,6 +1,25 @@
-[workspace]
+﻿[workspace]
 members = [
     "crates/auth",
-    "shared",
+    "crates/combat",
+    "crates/event-publisher",
+    "crates/player-state",
+    "crates/telemetry",
 ]
-resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Constellation Fabric Team"]
+license = "MIT"
+
+[workspace.dependencies]
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+axum = "0.7"
+hyper = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
