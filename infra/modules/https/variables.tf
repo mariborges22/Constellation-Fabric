@@ -1,12 +1,10 @@
-variable "domain_name" { type = string }
-variable "aws_region" {
-  type    = string
-  default = "us-east-1"
+variable "project_name" {
+  type        = string
+  description = "Nome do projeto (usado para nomear recursos)"
 }
-variable "acm_certificate_arn" { type = string }
-variable "route53_zone_id" { type = string }
-variable "alb_arn" { type = string }
-variable "alb_dns_name" { type = string }
-variable "alb_zone_id" { type = string }
-variable "target_group_arn" { type = string }
-variable "project_name" { type = string }
+
+variable "aws_region" {
+  type        = string
+  default     = "us-east-1"
+  description = "Região AWS onde os recursos serão criados"
+}

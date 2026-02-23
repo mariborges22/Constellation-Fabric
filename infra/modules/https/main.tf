@@ -1,75 +1,52 @@
-# S3 Bucket for CloudFront Logs
+# =============================================================
+# Cloudflare Tunnel Infrastructure Module
+# TLS Termination: Cloudflare Edge → cloudflared sidecar → ALB
+# =============================================================
+
+# --- S3 Bucket for Access Logs (retained from previous plan) ---
 resource "aws_s3_bucket" "cf_logs" {
-  bucket = "${var.project_name}-${var.aws_region}-cf-logs"
-  force_destroy = false # Changed to false for better safety
+  bucket        = "${var.project_name}-${var.aws_region}-cf-logs" # Keep original name to prevent forced destroy
+  force_destroy = false
 
   lifecycle {
     prevent_destroy = true
   }
 }
 
-# CloudFront Distribution
-resource "aws_cloudfront_distribution" "game_distribution" {
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "CloudFront for Constellation Fabric - ${var.project_name}"
-  price_class         = "PriceClass_100" # Lowest cost (US, Canada, Europe)
+resource "aws_s3_bucket_ownership_controls" "cf_logs" {
+  bucket = aws_s3_bucket.cf_logs.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "cf_logs" {
+  depends_on = [aws_s3_bucket_ownership_controls.cf_logs]
+  bucket     = aws_s3_bucket.cf_logs.id
+  acl        = "private"
+}
+
+# --- AWS Secrets Manager: Store the Cloudflare Tunnel Token ---
+# You must populate this secret manually AFTER creating the Tunnel in the Cloudflare Dashboard.
+# The tunnel token is sensitive and must never be stored in plain text in the repo.
+resource "aws_secretsmanager_secret" "cloudflare_tunnel_token" {
+  name                    = "${var.project_name}/cloudflare-tunnel-token"
+  description             = "Cloudflare Tunnel token for constellation-fabric-tunnel"
+  recovery_window_in_days = 7
 
   lifecycle {
     prevent_destroy = true
   }
-  # Rest of the config...
+}
 
-  # Logging configuration for EDA
-  logging_config {
-    include_cookies = false
-    bucket          = aws_s3_bucket.cf_logs.bucket_domain_name
-    prefix          = "cloudfront-logs/"
-  }
+# Placeholder value — populate manually via AWS Console or CLI before deploying ECS.
+# Command: aws secretsmanager put-secret-value --secret-id "${ var.project_name}/cloudflare-tunnel-token" --secret-string "YOUR_TUNNEL_TOKEN"
+resource "aws_secretsmanager_secret_version" "cloudflare_tunnel_token" {
+  secret_id     = aws_secretsmanager_secret.cloudflare_tunnel_token.id
+  secret_string = "REPLACE_ME_WITH_YOUR_CLOUDFLARED_TUNNEL_TOKEN"
 
-  origin {
-    domain_name = var.alb_dns_name
-    origin_id   = "ALB-Origin"
-
-    custom_origin_config {
-      http_port                = 80
-      https_port               = 443
-      origin_protocol_policy    = "http-only" # Our ALB is currently HTTP only on port 80
-      origin_ssl_protocols      = ["TLSv1.2"]
-    }
-  }
-
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "ALB-Origin"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"] # Forward all headers (dynamic behavior)
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 0 # No caching for dynamic game events
-    max_ttl                = 0
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = true # Use *.cloudfront.net
-  }
-
-  tags = {
-    Name = "${var.project_name}-cf"
+  lifecycle {
+    # Prevent Terraform from wiping the real token if you manage it manually
+    ignore_changes = [secret_string]
   }
 }

@@ -1,14 +1,11 @@
-output "cloudfront_domain_name" {
-  value       = aws_cloudfront_distribution.game_distribution.domain_name
-  description = "Domain name of the CloudFront distribution"
+output "tunnel_secret_arn" {
+  value       = aws_secretsmanager_secret.cloudflare_tunnel_token.arn
+  description = "ARN do Secret que armazena o Cloudflare Tunnel Token"
+  sensitive   = true
 }
 
-output "https_url" {
-  value       = "https://${aws_cloudfront_distribution.game_distribution.domain_name}"
-  description = "Base HTTPS URL for the game via CloudFront"
-}
-
-output "cf_logs_bucket" {
-  value       = aws_s3_bucket.cf_logs.bucket
-  description = "S3 bucket for CloudFront logs"
+output "access_logs_bucket" {
+  value       = aws_s3_bucket.cf_logs.id
+  description = "S3 bucket for access logs"
+  sensitive   = true
 }
