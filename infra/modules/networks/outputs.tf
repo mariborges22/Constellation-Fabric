@@ -21,3 +21,13 @@ output "alb_zone_id" {
 output "target_group_arn" {
   value = aws_lb_target_group.game_tg.arn
 }
+
+output "public_subnet_ids" {
+  value       = aws_subnet.public[*].id
+  description = "IDs das subnets públicas para o Fargate Service"
+}
+
+output "ecs_security_group_id" {
+  value       = aws_security_group.ecs_sg.id
+  description = "Security Group para as ECS tasks"
+}

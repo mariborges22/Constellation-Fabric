@@ -92,6 +92,27 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
+# Security Group para as ECS tasks (Fargate + cloudflared sidecar)
+resource "aws_security_group" "ecs_sg" {
+  name        = substr("${var.project_name}-${var.region}-ecs-sg", 0, 32)
+  description = "ECS tasks: recebe do ALB na 8080, libera todo egress para ECR/Cloudflare"
+  vpc_id      = aws_vpc.game_vpc.id
+
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # Só o ALB pode chamar o container
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"] # Necessário para ECR pull, Secrets Manager e Cloudflare Tunnel
+  }
+}
+
 # Application Load Balancer (ALB)
 resource "aws_lb" "game_alb" {
   # Limit name to 32 characters
@@ -100,6 +121,10 @@ resource "aws_lb" "game_alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = aws_subnet.public[*].id
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Health Check de 30s (SRE requirement)
