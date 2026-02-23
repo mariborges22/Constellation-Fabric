@@ -1,6 +1,7 @@
 output "oidc_role_arn" {
   value       = module.security.github_actions_role_arn
   description = "ARN da Role OIDC para o GitHub Actions"
+  sensitive   = true
 }
 
 output "oidc_provider_arn" {
@@ -64,5 +65,17 @@ output "ecr_combat_uri" {
 
 output "ecr_event_publisher_uri" {
   value = module.compute.repository_url_event_publisher
+}
+
+# HTTPS / Cloudflare Tunnel
+output "tunnel_secret_arn" {
+  value       = module.https.tunnel_secret_arn
+  description = "ARN do Secret com o token do Cloudflare Tunnel"
+  sensitive   = true
+}
+
+output "cf_access_logs_bucket" {
+  value     = module.https.access_logs_bucket
+  sensitive = true
 }
 
