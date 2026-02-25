@@ -1,0 +1,18 @@
+﻿================================================================
+CONSTELLATION FABRICK - Auth Wiring Setup Summary (Remote)
+================================================================
+
+STATUS: Frontend Configured
+Remote Backend URL: http://constellation-fabric-us-east-1-a-2070272044.us-east-1.elb.amazonaws.com
+
+FILES GENERATED:
+- frontend/js/auth.js
+- frontend/login.html
+
+IMPORTANT:
+O backend remoto (ECS) so sera atualizado com as novas rotas (/register) 
+apos voce realizar o PUSH das alteracoes para o GitHub, o que disparara 
+a pipeline de CI/CD.
+
+O frontend local agora esta apontando diretamente para o Load Balancer da AWS.
+================================================================

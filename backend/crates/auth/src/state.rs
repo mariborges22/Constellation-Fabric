@@ -19,6 +19,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/health", get(crate::handlers::health_check))
         .route("/", get(crate::handlers::root))
         .route("/api/auth/login", post(crate::handlers::login))
+        .route("/api/auth/register", post(crate::handlers::register))
         .route("/api/auth/verify", post(crate::handlers::verify_token))
         .route("/api/auth/refresh", post(crate::handlers::refresh_token))
         .with_state(state)

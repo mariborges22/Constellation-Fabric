@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Constellation Fabric - Auth</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #0b0e14; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: #1a1f26; padding: 2rem; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 350px; border: 1px solid #333; }
+    h1 { text-align: center; color: #00ffcc; font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .field { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: #aaa; }
+    input { width: 100%; padding: 10px; background: #252b33; border: 1px solid #444; border-radius: 6px; color: #fff; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #00ffcc; border: none; border-radius: 6px; color: #0b0e14; font-weight: bold; cursor: pointer; margin-top: 1rem; }
+    .toggle { text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #888; }
+    .toggle span { color: #00ffcc; cursor: pointer; text-decoration: underline; }
+    .msg { margin-top: 1rem; text-align: center; min-height: 1.2rem; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="title">Login</h1>
+    <form id="form">
+      <div class="field" id="userField">
+        <label>Username</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="field" id="emailField" style="display:none">
+        <label>Email</label>
+        <input type="email" id="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" id="btn">Login</button>
+    </form>
+    <div class="toggle" id="toggle">New here? <span onclick="app.toggle()">Register</span></div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <script src="js/auth.js"></script>
+  <script>
+    const app = {
+      isLogin: true,
+      toggle() {
+        this.isLogin = !this.isLogin;
+        document.getElementById('title').innerText = this.isLogin ? 'Login' : 'Register';
+        document.getElementById('emailField').style.display = this.isLogin ? 'none' : 'block';
+        document.getElementById('btn').innerText = this.isLogin ? 'Login' : 'Register';
+        document.getElementById('toggle').innerHTML = this.isLogin ? 'New here? <span onclick="app.toggle()">Register</span>' : 'Back to <span onclick="app.toggle()">Login</span>';
+      }
+    };
+
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const e_ = document.getElementById('email').value;
+      
+      try {
+        msg.innerText = app.isLogin ? 'Logging in...' : 'Registering...';
+        if (app.isLogin) {
+          await AuthService.login(u, p);
+        } else {
+          await AuthService.register(u, e_, p);
+        }
+        msg.style.color = '#00ffcc';
+        msg.innerText = 'Success! Redirecting...';
+        setTimeout(() => window.location.href = 'index.html', 1000);
+      } catch (err) {
+        msg.style.color = '#ff4d4d';
+        msg.innerText = 'Error: ' + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
