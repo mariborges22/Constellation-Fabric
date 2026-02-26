@@ -49,6 +49,23 @@ resource "aws_ecr_repository" "event_publisher" {
   }
 }
 
+resource "aws_ecr_repository" "player_state" {
+  name                 = "constellation-player_state"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "${var.project_name}-player_state-repo"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # ============================================================
 # ECS Cluster
 # ============================================================
@@ -155,6 +172,83 @@ resource "aws_ecs_task_definition" "auth" {
 }
 
 # ============================================================
+# ECS Task Definition — Player State
+# ============================================================
+resource "aws_ecs_task_definition" "player_state" {
+  family                   = "${var.project_name}-player_state"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "player-state"
+      image     = "${aws_ecr_repository.player_state.repository_url}:staging"
+      essential = true
+      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      environment = [
+        { name = "DATABASE_URL", value = "postgresql://postgres:postgres@postgres.local:5432/constellation" },
+        { name = "PORT", value = "8080" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.player_state.name
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+# ============================================================
+# ECS Task Definition — Postgres
+# ============================================================
+resource "aws_ecs_task_definition" "postgres" {
+  family                   = "${var.project_name}-postgres"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "postgres"
+      image     = "postgres:15-bookworm"
+      essential = true
+      portMappings = [{ containerPort = 5432, protocol = "tcp" }]
+      environment = [
+        { name = "POSTGRES_USER", value = "postgres" },
+        { name = "POSTGRES_PASSWORD", value = "postgres" },
+        { name = "POSTGRES_DB", value = "constellation" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.postgres.name
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_cloudwatch_log_group" "player_state" {
+  name              = "/ecs/${var.project_name}-player_state"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "postgres" {
+  name              = "/ecs/${var.project_name}-postgres"
+  retention_in_days = 7
+}
+
+# ============================================================
 # ECS Fargate Service
 # ============================================================
 resource "aws_ecs_service" "auth" {
@@ -172,5 +266,47 @@ resource "aws_ecs_service" "auth" {
 
   lifecycle {
     ignore_changes = [task_definition] # CI/CD manages deployments
+  }
+}
+
+resource "aws_ecs_service" "player_state" {
+  name            = "player-state-service"
+  cluster         = aws_ecs_cluster.game.id
+  task_definition = aws_ecs_task_definition.player_state.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.player_state_tg_arn
+    container_name   = "player-state"
+    container_port   = 8080
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+}
+
+resource "aws_ecs_service" "postgres" {
+  name            = "postgres-service"
+  cluster         = aws_ecs_cluster.game.id
+  task_definition = aws_ecs_task_definition.postgres.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = true
+  }
+
+  service_registries {
+    registry_arn = var.postgres_discovery_arn
   }
 }

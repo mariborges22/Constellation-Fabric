@@ -31,3 +31,11 @@ output "ecs_security_group_id" {
   value       = aws_security_group.ecs_sg.id
   description = "Security Group para as ECS tasks"
 }
+
+output "player_state_tg_arn" {
+  value = aws_lb_target_group.player_state_tg.arn
+}
+
+output "postgres_discovery_arn" {
+  value = aws_service_discovery_service.postgres.arn
+}

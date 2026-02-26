@@ -21,7 +21,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .connect(&database_url)
         .await?;
 
-    info!("Connected to database");
+    info!("Connected to database. Running migrations...");
+    sqlx::migrate!("./migrations").run(&pool).await?;
+    info!("Migrations applied successfully.");
 
     let app = build_router(pool);
 

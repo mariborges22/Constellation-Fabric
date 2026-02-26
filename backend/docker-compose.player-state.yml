@@ -1,0 +1,16 @@
+﻿version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: constellation
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./crates/player-state/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  postgres_data:

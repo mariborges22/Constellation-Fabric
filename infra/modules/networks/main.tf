@@ -113,6 +113,16 @@ resource "aws_security_group" "ecs_sg" {
   }
 }
 
+# Allow Postgres internal traffic
+resource "aws_security_group_rule" "postgres_ingress" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_sg.id
+  source_security_group_id = aws_security_group.ecs_sg.id
+}
+
 # Application Load Balancer (ALB)
 resource "aws_lb" "game_alb" {
   # Limit name to 32 characters
@@ -142,6 +152,21 @@ resource "aws_lb_target_group" "game_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2 # Failover rápido
+  }
+}
+
+resource "aws_lb_target_group" "player_state_tg" {
+  name     = substr("${var.project_name}-${var.region}-ps-tg", 0, 32)
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.game_vpc.id
+
+  health_check {
+    path                = "/api/players/health"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
 
@@ -178,7 +203,67 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "auth" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 10
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.game_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/auth/*", "/health", "/"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "player_state" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 20
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.player_state_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/players/*"]
+    }
+  }
+}
+
+# Service Discovery Namespace
+resource "aws_service_discovery_private_dns_namespace" "game" {
+  name        = "local"
+  description = "Game services internal discovery"
+  vpc         = aws_vpc.game_vpc.id
+}
+
+resource "aws_service_discovery_service" "postgres" {
+  name = "postgres"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.game.id
+
+    dns_records {
+      ttl  = 60
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
   }
 }

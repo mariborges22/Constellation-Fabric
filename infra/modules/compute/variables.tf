@@ -18,3 +18,13 @@ variable "tunnel_secret_arn" {
   description = "ARN do Secrets Manager secret com o token do Cloudflare Tunnel"
   sensitive   = true
 }
+
+variable "player_state_tg_arn" {
+  type        = string
+  description = "ARN do Target Group para o Player State"
+}
+
+variable "postgres_discovery_arn" {
+  type        = string
+  description = "ARN do Service Discovery para o Postgres"
+}
