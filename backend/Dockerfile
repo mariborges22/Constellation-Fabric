@@ -11,6 +11,7 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 
 WORKDIR /usr/local/bin
+ENV PORT=8080
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \

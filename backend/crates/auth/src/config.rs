@@ -11,9 +11,9 @@ impl Config {
         Self {
             version: "0.1.0".to_string(),
             port: std::env::var("PORT")
-                .unwrap_or("3000".to_string())
+                .unwrap_or("8080".to_string())
                 .parse()
-                .unwrap_or(3000),
+                .unwrap_or(8080),
             rate_limit_requests: std::env::var("RATE_LIMIT")
                 .unwrap_or("100".to_string())
                 .parse()
@@ -30,6 +30,6 @@ mod tests {
     #[test]
     fn test_config_defaults() {
         let config = Config::from_env();
-        assert_eq!(config.port, 3000);
+        assert_eq!(config.port, 8080);
     }
 }
