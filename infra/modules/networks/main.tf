@@ -139,11 +139,12 @@ resource "aws_lb" "game_alb" {
 
 # Health Check de 30s (SRE requirement)
 resource "aws_lb_target_group" "game_tg" {
-  # Limit name to 32 characters
-  name     = substr("${var.project_name}-${var.region}-tg", 0, 32)
-  port     = 8080 # Porta do backend Rust
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.game_vpc.id
+  # name_prefix is limited to 6 characters for ELBv2
+  name_prefix = "gm-tg-"
+  port        = 8080 # Porta do backend Rust
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.game_vpc.id
+  target_type = "ip"
 
   health_check {
     enabled             = true
@@ -153,13 +154,18 @@ resource "aws_lb_target_group" "game_tg" {
     healthy_threshold   = 2
     unhealthy_threshold = 2 # Failover rápido
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "player_state_tg" {
-  name     = substr("${var.project_name}-${var.region}-ps-tg", 0, 32)
-  port     = 8080
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.game_vpc.id
+  name_prefix = "ps-tg-"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.game_vpc.id
+  target_type = "ip"
 
   health_check {
     path                = "/api/players/health"
@@ -167,6 +173,10 @@ resource "aws_lb_target_group" "player_state_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
