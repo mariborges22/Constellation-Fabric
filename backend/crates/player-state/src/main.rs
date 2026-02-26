@@ -1,27 +1,39 @@
-﻿use axum::{routing::get, Json, Router};
-use chrono::Utc;
-use serde_json::{json, Value};
+﻿use player_state::build_router;
 use std::net::SocketAddr;
+use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
 use tracing::info;
 
 #[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
-    info!("🎮 Constellation Fabric - Player State Service v0.1.0");
+async fn main() -> Result<(), anyhow::Error> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
 
-    let app = Router::new().route("/health", get(health));
+    info!("👤 Constellation Fabric - Player State Service");
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8081));
-    info!("Listening on http://{}", addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/constellation".to_string());
 
-async fn health() -> Json<Value> {
-    Json(json!({
-        "status": "ok",
-        "service": "player-state",
-        "version": "0.1.0",
-        "timestamp": Utc::now().to_rfc3339()
-    }))
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .acquire_timeout(Duration::from_secs(300))
+        .connect(&database_url)
+        .await?;
+
+    info!("Connected to database");
+
+    let app = build_router(pool);
+
+    let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "8081".to_string())
+        .parse::<u16>()?;
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    info!("Server listening on http://{}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }

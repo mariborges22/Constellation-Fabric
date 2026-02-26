@@ -5,7 +5,9 @@ COPY . .
 
 # Build dependencies separately to cache them if possible
 # (Using a simple build here for brevity, but could use cargo-chef for better caching)
-RUN cargo build --release
+# Build dependencies
+RUN cargo build --release --package auth
+RUN cargo build --release --package player-state
 
 # Runtime Stage
 FROM debian:bookworm-slim
@@ -19,8 +21,9 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy binary from builder
+# Copy binaries from builder
 COPY --from=builder /usr/src/app/target/release/auth /usr/local/bin/auth
+COPY --from=builder /usr/src/app/target/release/player-state /usr/local/bin/player-state
 
 # Expose the API port
 EXPOSE 8080
