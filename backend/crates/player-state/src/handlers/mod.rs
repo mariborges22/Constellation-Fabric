@@ -6,9 +6,6 @@ pub struct ServiceState { pub service_name: String }
 
 use crate::models::{SyncRequest, SyncResponse};
 
-#[derive(Clone)]
-pub struct ServiceState { pub service_name: String }
-
 pub async fn sync_position(
     _state: State<Arc<ServiceState>>,
     Json(payload): Json<SyncRequest>
