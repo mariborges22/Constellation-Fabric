@@ -33,11 +33,15 @@ tfplan
 *.iml
 
 # Secretos e Chaves (Seguranca Critica)
-*oidc-role-arn.txt
+jwt_private.pem
+jwt_public.pem
 *.pem
 *.key
 *.csv
+*oidc-role-arn.txt
 *accessKeys*
 *credentials*
 aws_access_key_id.txt
 aws_secret_access_key.txt
+.env*
+!backend/crates/player-state/.env.example
