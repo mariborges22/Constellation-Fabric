@@ -29,6 +29,8 @@ jobs:
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "backend"
 
       - name: Validation - Cargo Check
         run: cargo check --manifest-path backend/Cargo.toml
