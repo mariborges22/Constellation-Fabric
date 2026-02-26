@@ -24,6 +24,11 @@ variable "player_state_tg_arn" {
   description = "ARN do Target Group para o Player State"
 }
 
+variable "combat_tg_arn" {
+  type        = string
+  description = "ARN do Target Group para o Combat Engine"
+}
+
 variable "postgres_discovery_arn" {
   type        = string
   description = "ARN do Service Discovery para o Postgres"

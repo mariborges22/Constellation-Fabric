@@ -180,6 +180,26 @@ resource "aws_lb_target_group" "player_state_tg" {
   }
 }
 
+resource "aws_lb_target_group" "combat_tg" {
+  name_prefix = "cb-tg-"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.game_vpc.id
+  target_type = "ip"
+
+  health_check {
+    path                = "/api/v1/combat/health"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # AWS Global Accelerator (Ponto de Entrada Único)
 resource "aws_globalaccelerator_accelerator" "game_accel" {
   count           = var.enable_global_accelerator ? 1 : 0
@@ -254,6 +274,21 @@ resource "aws_lb_listener_rule" "player_state" {
   }
 }
 
+resource "aws_lb_listener_rule" "combat" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 30
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.combat_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/v1/combat/*"]
+    }
+  }
+}
 # Service Discovery Namespace
 resource "aws_service_discovery_private_dns_namespace" "game" {
   name        = "local"

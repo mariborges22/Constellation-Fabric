@@ -111,6 +111,40 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
   })
 }
 
+# ECS Task Role (allows the application to interact with AWS services like X-Ray)
+resource "aws_iam_role" "ecs_task_role" {
+  name = "${var.project_name}-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_monitoring" {
+  name = "ecs-task-monitoring-policy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # ============================================================
 # CloudWatch Log Groups for ECS containers
 # ============================================================
@@ -124,6 +158,11 @@ resource "aws_cloudwatch_log_group" "cloudflared" {
   retention_in_days = 7
 }
 
+resource "aws_cloudwatch_log_group" "combat" {
+  name              = "/ecs/${var.project_name}-combat"
+  retention_in_days = 7
+}
+
 # ============================================================
 # ECS Task Definition — Auth app + cloudflared sidecar
 # ============================================================
@@ -134,6 +173,7 @@ resource "aws_ecs_task_definition" "auth" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -181,6 +221,7 @@ resource "aws_ecs_task_definition" "player_state" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -249,6 +290,40 @@ resource "aws_cloudwatch_log_group" "postgres" {
 }
 
 # ============================================================
+# ECS Task Definition — Combat
+# ============================================================
+resource "aws_ecs_task_definition" "combat" {
+  family                   = "${var.project_name}-combat"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "combat"
+      image     = "${aws_ecr_repository.combat.repository_url}:staging"
+      essential = true
+      portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      environment = [
+        { name = "PLAYER_STATE_API", value = "http://player-state.local:8080/api/v1/players" },
+        { name = "PORT", value = "8080" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.combat.name
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+# ============================================================
 # ECS Fargate Service
 # ============================================================
 resource "aws_ecs_service" "auth" {
@@ -308,5 +383,29 @@ resource "aws_ecs_service" "postgres" {
 
   service_registries {
     registry_arn = var.postgres_discovery_arn
+  }
+}
+
+resource "aws_ecs_service" "combat" {
+  name            = "combat-service"
+  cluster         = aws_ecs_cluster.game.id
+  task_definition = aws_ecs_task_definition.combat.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.combat_tg_arn
+    container_name   = "combat"
+    container_port   = 8080
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition]
   }
 }

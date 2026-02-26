@@ -39,3 +39,7 @@ output "player_state_tg_arn" {
 output "postgres_discovery_arn" {
   value = aws_service_discovery_service.postgres.arn
 }
+
+output "combat_tg_arn" {
+  value = aws_lb_target_group.combat_tg.arn
+}
