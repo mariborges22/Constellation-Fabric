@@ -92,7 +92,7 @@ $authJsContent = @"
 // Auth Service - Frontend Integration (Remote)
 // ============================================================================
 
-const AUTH_API = '$BACKEND_URL/api/auth';
+const AUTH_API = '$BACKEND_URL/api/v1/auth';
 const TOKEN_KEY = 'constellation_token';
 
 class AuthService {

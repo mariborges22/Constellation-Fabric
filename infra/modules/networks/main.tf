@@ -168,7 +168,7 @@ resource "aws_lb_target_group" "player_state_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/api/players/health"
+    path                = "/api/v1/players/health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -233,7 +233,7 @@ resource "aws_lb_listener_rule" "auth" {
 
   condition {
     path_pattern {
-      values = ["/api/auth/*", "/health", "/"]
+      values = ["/api/v1/auth/*", "/api/auth/*", "/health", "/"]
     }
   }
 }
@@ -249,7 +249,7 @@ resource "aws_lb_listener_rule" "player_state" {
 
   condition {
     path_pattern {
-      values = ["/api/players/*"]
+      values = ["/api/v1/players/*", "/api/players/*"]
     }
   }
 }

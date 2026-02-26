@@ -49,7 +49,7 @@ $gameAlb = $alb.LoadBalancers | Where-Object { $_.LoadBalancerName -like "*$PROJ
 if ($null -ne $gameAlb) {
     $dns = $gameAlb.DNSName
     Write-Host "  OK -> Application Load Balancer: http://$dns" -ForegroundColor Green
-    Write-Host "  [*] Player State API: http://$dns/api/players" -ForegroundColor Cyan
+    Write-Host "  [*] Player State API: http://$dns/api/v1/players" -ForegroundColor Cyan
 } else {
     Write-Host "  AVISO -> ALB nao encontrado." -ForegroundColor Yellow
 }
@@ -70,11 +70,11 @@ Migrations: Automatic (Managed by Rust service)
 
 CONNECTIVITY:
 - Internal DB: postgres.local:5432
-- External API: http://$dns/api/players
+- External API: http://$dns/api/v1/players
 
 NEXT STEPS:
 1. git add .
-2. git commit -m "feat: implement ECS-based player-state with auto-migrations"
+2. git commit -m "feat: implement /v1 API and idempotency"
 3. git push
 4. Wait for CI/CD to deploy to ECR and reach Staging.
 ================================================

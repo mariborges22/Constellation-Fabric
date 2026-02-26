@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
@@ -70,6 +70,11 @@ pub async fn create_player(
     .fetch_one(pool)
     .await
     .map_err(|e| {
+        if let Some(db_err) = e.as_database_error() {
+            if db_err.is_unique_violation() {
+                return StatusCode::CONFLICT;
+            }
+        }
         tracing::error!("Database error creating player: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -127,15 +132,20 @@ pub async fn update_player_state(
 
 pub fn build_router(pool: PgPool) -> Router {
     Router::new()
-        .route("/api/players", post(handlers::create_player_handler))
-        .route("/api/players/:id", get(handlers::get_player_handler))
-        .route("/api/players/:id/state", put(handlers::update_player_state_handler))
+        .route("/api/v1/players/health", get(handlers::health_check_handler))
+        .route("/api/v1/players", post(handlers::create_player_handler))
+        .route("/api/v1/players/:id", get(handlers::get_player_handler))
+        .route("/api/v1/players/:id/state", put(handlers::update_player_state_handler))
         .with_state(pool)
 }
 
 pub mod handlers {
     use super::*;
     use axum::{extract::{State, Path}, Json};
+
+    pub async fn health_check_handler() -> impl IntoResponse {
+        (StatusCode::OK, Json(serde_json::json!({"status": "ok"})))
+    }
 
     pub async fn create_player_handler(
         State(pool): State<PgPool>,
@@ -163,6 +173,7 @@ pub mod handlers {
 
     pub async fn update_player_state_handler(
         State(pool): State<PgPool>,
+        axum::extract::HeaderMap(headers): axum::extract::HeaderMap,
         Path(player_id): Path<Uuid>,
         Json(req): Json<UpdatePlayerStateRequest>,
     ) -> impl IntoResponse {
@@ -170,8 +181,45 @@ pub mod handlers {
             return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))).into_response();
         }
 
+        // 1. Check for Idempotency-Key
+        let idempotency_key = headers.get("X-Idempotency-Key")
+            .and_then(|h| h.to_str().ok())
+            .and_then(|s| Uuid::parse_str(s).ok());
+
+        if let Some(key) = idempotency_key {
+            let existing: Option<(serde_json::Value, i16)> = sqlx::query_as(
+                "SELECT response_body, status_code FROM idempotency_keys WHERE key = $1"
+            )
+            .bind(key)
+            .fetch_optional(&pool)
+            .await
+            .unwrap_or(None);
+
+            if let Some((body, status)) = existing {
+                let status = StatusCode::from_u16(status as u16).unwrap_or(StatusCode::OK);
+                return (status, Json(body)).into_response();
+            }
+        }
+
+        // 2. Perform Update
         match update_player_state(&pool, player_id, req).await {
-            Ok(state) => (StatusCode::OK, Json(state)).into_response(),
+            Ok(state) => {
+                let res_body = serde_json::to_value(&state).unwrap_or_default();
+                
+                // 3. Save key if present
+                if let Some(key) = idempotency_key {
+                    let _ = sqlx::query(
+                        "INSERT INTO idempotency_keys (key, response_body, status_code) VALUES ($1, $2, $3)"
+                    )
+                    .bind(key)
+                    .bind(&res_body)
+                    .bind(StatusCode::OK.as_u16() as i16)
+                    .execute(&pool)
+                    .await;
+                }
+
+                (StatusCode::OK, Json(state)).into_response()
+            },
             Err(err) => (err, Json(serde_json::json!({"error": "Failed to update state"}))).into_response(),
         }
     }
