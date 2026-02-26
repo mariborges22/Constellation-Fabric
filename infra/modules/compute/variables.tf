@@ -28,3 +28,9 @@ variable "postgres_discovery_arn" {
   type        = string
   description = "ARN do Service Discovery para o Postgres"
 }
+
+variable "db_password" {
+  type        = string
+  description = "Senha do banco de dados"
+  sensitive   = true
+}

@@ -189,7 +189,7 @@ resource "aws_ecs_task_definition" "player_state" {
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
       environment = [
-        { name = "DATABASE_URL", value = "postgresql://postgres:postgres@postgres.local:5432/constellation" },
+        { name = "DATABASE_URL", value = "postgresql://postgres:${var.db_password}@postgres.local:5432/constellation" },
         { name = "PORT", value = "8080" }
       ]
       logConfiguration = {
@@ -223,7 +223,7 @@ resource "aws_ecs_task_definition" "postgres" {
       portMappings = [{ containerPort = 5432, protocol = "tcp" }]
       environment = [
         { name = "POSTGRES_USER", value = "postgres" },
-        { name = "POSTGRES_PASSWORD", value = "postgres" },
+        { name = "POSTGRES_PASSWORD", value = var.db_password },
         { name = "POSTGRES_DB", value = "constellation" }
       ]
       logConfiguration = {

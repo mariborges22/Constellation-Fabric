@@ -18,3 +18,9 @@ variable "domain_name" {
   description = "Domínio principal"
   default     = "constellation-fabric.com"
 }
+
+variable "db_password" {
+  type        = string
+  description = "Senha para o banco de dados PostgreSQL"
+  sensitive   = true
+}

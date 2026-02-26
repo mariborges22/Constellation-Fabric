@@ -43,6 +43,7 @@ module "compute" {
   tunnel_secret_arn         = module.https.tunnel_secret_arn
   player_state_tg_arn      = module.networks_us.player_state_tg_arn
   postgres_discovery_arn    = module.networks_us.postgres_discovery_arn
+  db_password               = var.db_password
 }
 
 module "https" {
