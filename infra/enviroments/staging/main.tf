@@ -8,7 +8,7 @@ module "security" {
 module "networks_us" {
   source = "../../modules/networks"
   providers = {
-    aws = aws.us_east_1
+    aws = aws.primary
   }
 
   project_name = var.project_name
@@ -19,7 +19,7 @@ module "networks_us" {
 module "networks_eu" {
   source = "../../modules/networks"
   providers = {
-    aws = aws.eu_west_1
+    aws = aws.secondary
   }
 
   project_name = var.project_name

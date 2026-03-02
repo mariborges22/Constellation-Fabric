@@ -25,7 +25,8 @@ async fn main() -> Result<(), anyhow::Error> {
     sqlx::migrate!("./migrations").run(&pool).await?;
     info!("Migrations applied successfully.");
 
-    let app = build_router(pool);
+    let repo = std::sync::Arc::new(player_state::PostgresPlayerRepository::new(pool));
+    let app = build_router(repo);
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "8081".to_string())

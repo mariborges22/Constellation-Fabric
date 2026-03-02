@@ -1,8 +1,9 @@
 use crate::character::Character;
 use crate::elements::{Element, ElementalReaction};
-use rand::Rng;
+use crate::logic::math::{CombatMath, AuthoritativeCombatMath};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use tracing::{info, span, Level};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionType {
@@ -19,27 +20,59 @@ pub struct CombatResult {
     pub action: CombatAction, pub target_remaining_hp: f32, pub is_critical: bool, pub final_damage: f32,
 }
 
-pub struct CombatEngine;
+pub struct CombatEngine {
+    math: Box<dyn CombatMath>,
+}
+
 impl CombatEngine {
-    pub fn calculate_damage(attacker: &Character, action_type: ActionType) -> f32 {
-        match action_type {
-            ActionType::NormalAttack => attacker.attack,
-            ActionType::ChargedAttack => attacker.attack * 1.5,
-            ActionType::ElementalSkill => attacker.attack * 1.2 + attacker.elemental_mastery * 0.5,
-            ActionType::ElementalBurst => attacker.attack * 2.0 + attacker.elemental_mastery * 0.8,
+    pub fn new() -> Self {
+        Self {
+            math: Box::new(AuthoritativeCombatMath),
         }
     }
-    pub fn execute_action(attacker: &Character, defender: &mut Character, action_type: ActionType) -> CombatResult {
-        let base = Self::calculate_damage(attacker, action_type);
-        let react = attacker.element.get_reaction(defender.element);
-        let mult = attacker.element.get_damage_multiplier(react);
-        let final_dmg = base * mult;
+
+    pub fn execute_action(&self, attacker: &Character, defender: &mut Character, action_type: ActionType) -> CombatResult {
+        let span = span!(Level::INFO, "combat_action", 
+            actor_id = %attacker.id, 
+            defender_id = %defender.id, 
+            action = ?action_type
+        );
+        let _enter = span.enter();
+
+        // 1. Calculate Base Damage
+        let base_dmg = self.math.calculate_base_damage(attacker, action_type);
+        
+        // 2. Handle Elemental Reactions
+        let (reaction, multiplier) = attacker.element.calculate_reaction(defender.element);
+        let reaction_dmg = self.math.calculate_reaction_bonus(attacker, reaction, base_dmg * multiplier);
+        
+        // 3. Handle Critical Hits
+        let (crit_dmg, is_critical) = self.math.calculate_critical_hit(attacker, reaction_dmg);
+        
+        // 4. Defense Mitigation
+        let final_dmg = self.math.calculate_defense_mitigation(defender, crit_dmg);
+
+        info!(
+            final_damage = final_dmg, 
+            reaction = ?reaction, 
+            critical = is_critical, 
+            "Damage calculated"
+        );
+
         defender.take_damage(final_dmg);
+
         CombatResult {
             action: CombatAction {
-                id: Uuid::new_v4(), actor_id: attacker.id, action_type, damage: final_dmg, reaction: react, timestamp: chrono::Utc::now().timestamp() as u64,
+                id: Uuid::new_v4(),
+                actor_id: attacker.id,
+                action_type,
+                damage: final_dmg,
+                reaction,
+                timestamp: chrono::Utc::now().timestamp() as u64,
             },
-            target_remaining_hp: defender.current_hp, is_critical: false, final_damage: final_dmg,
+            target_remaining_hp: defender.current_hp,
+            is_critical,
+            final_damage: final_dmg,
         }
     }
 }
