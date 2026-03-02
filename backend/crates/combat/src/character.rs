@@ -45,7 +45,7 @@ impl Character {
         let reduction = self.defense * 0.1;
         damage = damage * (1.0 - reduction.min(0.9));
         self.current_hp -= damage;
-        if (self.current_hp < 0.0) { self.current_hp = 0.0; }
+        if self.current_hp < 0.0 { self.current_hp = 0.0; }
     }
 }
 

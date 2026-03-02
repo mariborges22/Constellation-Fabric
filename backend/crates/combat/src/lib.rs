@@ -3,6 +3,7 @@ pub mod character;
 pub mod combat;
 pub mod logic;
 pub mod api;
+pub mod handlers;
 
 pub use elements::{Element, ElementalReaction};
 pub use character::Character;

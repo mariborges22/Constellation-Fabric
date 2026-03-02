@@ -1,4 +1,4 @@
-use crate::elements::{Element, ElementalReaction};
+use crate::elements::ElementalReaction;
 use crate::character::Character;
 use crate::combat::ActionType;
 

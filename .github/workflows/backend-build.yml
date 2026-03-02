@@ -32,6 +32,11 @@ jobs:
         with:
           workspaces: "backend"
 
+      - name: Auto-fix & Lint
+        run: |
+          cargo fix --manifest-path backend/Cargo.toml --allow-dirty --allow-staged
+          cargo fmt --manifest-path backend/Cargo.toml --all
+
       - name: Validation - Cargo Check
         run: cargo check --manifest-path backend/Cargo.toml
 

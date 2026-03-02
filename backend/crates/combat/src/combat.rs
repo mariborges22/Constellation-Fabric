@@ -1,5 +1,5 @@
 use crate::character::Character;
-use crate::elements::{Element, ElementalReaction};
+use crate::elements::ElementalReaction;
 use crate::logic::math::{CombatMath, AuthoritativeCombatMath};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
