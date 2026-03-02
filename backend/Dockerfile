@@ -6,9 +6,8 @@ COPY . .
 # Build dependencies separately to cache them if possible
 # (Using a simple build here for brevity, but could use cargo-chef for better caching)
 # Build dependencies
-RUN cargo build --release --package auth
-RUN cargo build --release --package player-state
-RUN cargo build --release --package combat
+# Build all target packages in a single layer to save space/time
+RUN cargo build --release --package auth --package player-state --package combat
 
 # Runtime Stage
 FROM debian:bookworm-slim
