@@ -181,6 +181,7 @@ resource "aws_ecs_task_definition" "auth" {
       image     = "${aws_ecr_repository.auth.repository_url}:staging"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      command      = ["auth"]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -229,6 +230,7 @@ resource "aws_ecs_task_definition" "player_state" {
       image     = "${aws_ecr_repository.player_state.repository_url}:staging"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      command      = ["player-state"]
       environment = [
         { name = "DATABASE_URL", value = "postgresql://postgres:${var.db_password}@postgres.local:5432/constellation" },
         { name = "PORT", value = "8080" }
@@ -307,6 +309,7 @@ resource "aws_ecs_task_definition" "combat" {
       image     = "${aws_ecr_repository.combat.repository_url}:staging"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+      command      = ["combat"]
       environment = [
         { name = "PLAYER_STATE_API", value = "http://player-state.local:8080/api/v1/players" },
         { name = "PORT", value = "8080" }

@@ -8,6 +8,7 @@ COPY . .
 # Build dependencies
 RUN cargo build --release --package auth
 RUN cargo build --release --package player-state
+RUN cargo build --release --package combat
 
 # Runtime Stage
 FROM debian:bookworm-slim
@@ -24,8 +25,7 @@ RUN apt-get update && apt-get install -y \
 # Copy binaries from builder
 COPY --from=builder /usr/src/app/target/release/auth /usr/local/bin/auth
 COPY --from=builder /usr/src/app/target/release/player-state /usr/local/bin/player-state
+COPY --from=builder /usr/src/app/target/release/combat /usr/local/bin/combat
 
 # Expose the API port
 EXPOSE 8080
-
-CMD ["auth"]
