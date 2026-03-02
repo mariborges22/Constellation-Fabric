@@ -29,3 +29,5 @@ COPY --from=builder /usr/src/app/target/release/combat /usr/local/bin/combat
 
 # Expose the API port
 EXPOSE 8080
+
+CMD ["auth"]
