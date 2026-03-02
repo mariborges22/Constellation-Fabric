@@ -19,6 +19,11 @@ variable "tunnel_secret_arn" {
   sensitive   = true
 }
 
+variable "auth_tg_arn" {
+  type        = string
+  description = "ARN do Target Group para o Auth Service"
+}
+
 variable "player_state_tg_arn" {
   type        = string
   description = "ARN do Target Group para o Player State"

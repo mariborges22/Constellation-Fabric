@@ -40,6 +40,7 @@ module "compute" {
   project_name              = var.project_name
   subnet_ids                = module.networks_us.public_subnet_ids
   security_group_id         = module.networks_us.ecs_security_group_id
+  auth_tg_arn               = module.networks_us.target_group_arn
   tunnel_secret_arn         = module.https.tunnel_secret_arn
   player_state_tg_arn      = module.networks_us.player_state_tg_arn
   combat_tg_arn            = module.networks_us.combat_tg_arn

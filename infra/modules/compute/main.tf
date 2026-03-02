@@ -339,6 +339,12 @@ resource "aws_ecs_service" "auth" {
     assign_public_ip = true
   }
 
+  load_balancer {
+    target_group_arn = var.auth_tg_arn
+    container_name   = "auth"
+    container_port   = 8080
+  }
+
   lifecycle {
     ignore_changes = [task_definition] # CI/CD manages deployments
   }
