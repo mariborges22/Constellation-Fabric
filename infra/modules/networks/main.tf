@@ -309,6 +309,10 @@ resource "aws_service_discovery_service" "postgres" {
   }
 
   health_check_custom_config {
-    # failure_threshold is deprecated and no longer supported by AWS
+    # failure_threshold is deprecated
+  }
+
+  lifecycle {
+    ignore_changes = [health_check_custom_config]
   }
 }
