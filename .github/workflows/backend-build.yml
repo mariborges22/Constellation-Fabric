@@ -91,5 +91,7 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/constellation-auth:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/constellation-player_state:${{ github.ref_name }}
             ${{ steps.login-ecr.outputs.registry }}/constellation-player_state:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/constellation-combat:${{ github.ref_name }}
+            ${{ steps.login-ecr.outputs.registry }}/constellation-combat:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
