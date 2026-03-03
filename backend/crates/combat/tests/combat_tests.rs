@@ -5,22 +5,26 @@ fn test_elemental_reaction_vaporize_multipliers() {
     let engine = CombatEngine::new();
     
     // Hydro hitting Pyro (Strong Side) -> 2.0x
-    let attacker_hydro = Character::new("HydroUser".to_string(), Element::Hydro, 10);
+    let mut attacker_hydro = Character::new("HydroUser".to_string(), Element::Hydro, 10);
+    attacker_hydro.critical_rate = 0.0; // Disable crit for determinism
     let mut defender_pyro = Character::new("PyroTarget".to_string(), Element::Pyro, 10);
     
     let result_strong = engine.execute_action(&attacker_hydro, &mut defender_pyro, ActionType::NormalAttack);
+    dbg!(&result_strong);
     assert_eq!(result_strong.action.reaction, ElementalReaction::Vaporize);
-    // Base attack is 10 + 10*2 = 30. Defense at level 10 reduces slightly.
-    // Reaction 2.0x.
-    assert!(result_strong.final_damage > 40.0, "Damage should be amplified by 2.0x");
+    assert!(result_strong.final_damage > 40.0, "Strong side damage: {}", result_strong.final_damage);
 
     // Pyro hitting Hydro (Weak Side) -> 1.5x
-    let attacker_pyro = Character::new("PyroUser".to_string(), Element::Pyro, 10);
+    let mut attacker_pyro = Character::new("PyroUser".to_string(), Element::Pyro, 10);
+    attacker_pyro.critical_rate = 0.0; // Disable crit for determinism
     let mut defender_hydro = Character::new("HydroTarget".to_string(), Element::Hydro, 10);
     
     let result_weak = engine.execute_action(&attacker_pyro, &mut defender_hydro, ActionType::NormalAttack);
+    dbg!(&result_weak);
     assert_eq!(result_weak.action.reaction, ElementalReaction::Vaporize);
-    assert!(result_weak.final_damage < result_strong.final_damage, "Weak side vaporize should deal less damage");
+    assert!(result_weak.final_damage < result_strong.final_damage, 
+        "Weak side ({}) should be less than Strong side ({})", 
+        result_weak.final_damage, result_strong.final_damage);
 }
 
 #[test]
