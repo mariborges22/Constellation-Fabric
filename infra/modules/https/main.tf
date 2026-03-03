@@ -5,7 +5,7 @@
 
 # --- S3 Bucket for Access Logs (retained from previous plan) ---
 resource "aws_s3_bucket" "cf_logs" {
-  bucket        = "${var.project_name}-${var.aws_region}-cf-logs" # Keep original name to prevent forced destroy
+  bucket        = "${var.project_name}-${var.aws_region}-cf-logs-721529235452" # Nome único globalmente
   force_destroy = false
 
   lifecycle {
