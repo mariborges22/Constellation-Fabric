@@ -348,9 +348,9 @@ resource "aws_ecs_service" "auth" {
     container_port   = 8080
   }
 
-  lifecycle {
-    ignore_changes = [task_definition] # CI/CD manages deployments
-  }
+  # lifecycle {
+  #   ignore_changes = [task_definition] # CI/CD manages deployments
+  # }
 }
 
 resource "aws_ecs_service" "player_state" {
@@ -372,9 +372,9 @@ resource "aws_ecs_service" "player_state" {
     container_port   = 8080
   }
 
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
+  # lifecycle {
+  #   ignore_changes = [task_definition]
+  # }
 }
 
 resource "aws_ecs_service" "postgres" {
@@ -414,7 +414,7 @@ resource "aws_ecs_service" "combat" {
     container_port   = 8080
   }
 
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
+  # lifecycle {
+  #   ignore_changes = [task_definition]
+  # }
 }
