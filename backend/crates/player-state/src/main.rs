@@ -10,7 +10,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    info!("👤 Constellation Fabric - Player State Service");
+    info!("Constellation Fabric - Player State Service");
 
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/constellation".to_string());
