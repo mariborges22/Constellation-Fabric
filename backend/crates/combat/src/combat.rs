@@ -1,5 +1,6 @@
 use crate::character::Character;
 use crate::elements::ElementalReaction;
+use event_publisher::publisher::KinesisPublisher;
 use crate::logic::math::{CombatMath, AuthoritativeCombatMath};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -22,12 +23,14 @@ pub struct CombatResult {
 
 pub struct CombatEngine {
     math: Box<dyn CombatMath>,
+    publisher: Option<KinesisPublisher>,
 }
 
 impl CombatEngine {
-    pub fn new() -> Self {
+    pub fn new(publisher: Option<KinesisPublisher>) -> Self {
         Self {
             math: Box::new(AuthoritativeCombatMath),
+            publisher,
         }
     }
 
@@ -61,7 +64,7 @@ impl CombatEngine {
 
         defender.take_damage(final_dmg);
 
-        CombatResult {
+        let result = CombatResult {
             action: CombatAction {
                 id: Uuid::new_v4(),
                 actor_id: attacker.id,
@@ -73,7 +76,13 @@ impl CombatEngine {
             target_remaining_hp: defender.current_hp,
             is_critical,
             final_damage: final_dmg,
+        };
+
+        if let Some(publisher) = &self.publisher {
+            publisher.publish_event(result.action.actor_id.to_string(), &result.action);
         }
+
+        result
     }
 }
 

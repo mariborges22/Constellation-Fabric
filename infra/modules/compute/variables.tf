@@ -34,13 +34,26 @@ variable "combat_tg_arn" {
   description = "ARN do Target Group para o Combat Engine"
 }
 
-variable "postgres_discovery_arn" {
+variable "db_endpoint" {
   type        = string
-  description = "ARN do Service Discovery para o Postgres"
+  description = "RDS Instance endpoint"
+  default     = ""
 }
 
 variable "db_password" {
   type        = string
   description = "Senha do banco de dados"
   sensitive   = true
+}
+
+variable "kinesis_stream_name" {
+  type        = string
+  description = "Nome do Kinesis Stream para eventos de combate"
+  default     = ""
+}
+
+variable "kinesis_stream_arn" {
+  type        = string
+  description = "ARN do Kinesis Stream para permissões IAM"
+  default     = ""
 }

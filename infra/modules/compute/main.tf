@@ -140,6 +140,11 @@ resource "aws_iam_role_policy" "ecs_task_monitoring" {
           "cloudwatch:PutMetricData"
         ]
         Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kinesis:PutRecord", "kinesis:PutRecords"]
+        Resource = [var.kinesis_stream_arn]
       }
     ]
   })
@@ -232,7 +237,7 @@ resource "aws_ecs_task_definition" "player_state" {
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
       command      = ["player-state"]
       environment = [
-        { name = "DATABASE_URL", value = "postgresql://postgres:${var.db_password}@postgres.local:5432/constellation" },
+        { name = "DATABASE_URL", value = "postgresql://postgres:${var.db_password}@${var.db_endpoint}/constellation" },
         { name = "PORT", value = "8080" }
       ]
       logConfiguration = {
@@ -247,39 +252,6 @@ resource "aws_ecs_task_definition" "player_state" {
   ])
 }
 
-# ============================================================
-# ECS Task Definition — Postgres
-# ============================================================
-resource "aws_ecs_task_definition" "postgres" {
-  family                   = "${var.project_name}-postgres"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "postgres"
-      image     = "postgres:15-bookworm"
-      essential = true
-      portMappings = [{ containerPort = 5432, protocol = "tcp" }]
-      environment = [
-        { name = "POSTGRES_USER", value = "postgres" },
-        { name = "POSTGRES_PASSWORD", value = var.db_password },
-        { name = "POSTGRES_DB", value = "constellation" }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.postgres.name
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-    }
-  ])
-}
 
 resource "aws_cloudwatch_log_group" "player_state" {
   name              = "/ecs/${var.project_name}-player_state"
@@ -312,6 +284,7 @@ resource "aws_ecs_task_definition" "combat" {
       command      = ["combat"]
       environment = [
         { name = "PLAYER_STATE_API", value = "http://player-state.local:8080/api/v1/players" },
+        { name = "KINESIS_STREAM_NAME", value = var.kinesis_stream_name },
         { name = "PORT", value = "8080" }
       ]
       logConfiguration = {
@@ -377,23 +350,6 @@ resource "aws_ecs_service" "player_state" {
   # }
 }
 
-resource "aws_ecs_service" "postgres" {
-  name            = "postgres-service"
-  cluster         = aws_ecs_cluster.game.id
-  task_definition = aws_ecs_task_definition.postgres.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
-    assign_public_ip = true
-  }
-
-  service_registries {
-    registry_arn = var.postgres_discovery_arn
-  }
-}
 
 resource "aws_ecs_service" "combat" {
   name            = "combat-service"

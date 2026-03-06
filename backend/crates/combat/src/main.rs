@@ -1,17 +1,27 @@
-﻿use axum::{routing::{get, post}, Router};
+use axum::{routing::{get, post}, Router};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 use combat::handlers::{combat_handler, health_check_handler, AppState};
 use combat::CombatEngine;
+use event_publisher::publisher::KinesisPublisher;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
     info!("⚔️  Constellation Fabric - Authoritative Combat Engine v1.0.0");
 
+    let stream_name = std::env::var("KINESIS_STREAM_NAME").ok();
+    let publisher = if let Some(name) = stream_name {
+        info!("Kinesis integration enabled for stream: {}", name);
+        Some(KinesisPublisher::new(name).await)
+    } else {
+        info!("Kinesis integration disabled (KINESIS_STREAM_NAME not set)");
+        None
+    };
+
     let state = Arc::new(AppState {
-        combat_engine: Arc::new(CombatEngine::new()),
+        combat_engine: Arc::new(CombatEngine::new(publisher)),
     });
 
     let app = Router::new()

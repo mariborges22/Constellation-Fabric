@@ -45,3 +45,24 @@ resource "aws_iam_role_policy_attachment" "admin_access" {
   role       = aws_iam_role.github_actions_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
+resource "aws_budgets_budget" "cost_alert" {
+  name              = "${var.project_name}-monthly-budget"
+  budget_type       = "COST"
+  limit_amount      = "5"
+  limit_unit        = "USD"
+  time_period_end   = "2087-06-15_00:00"
+  time_period_start = "2024-01-01_00:00"
+  time_unit         = "MONTHLY"
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = ["joel.alexandre.silva@gmail.com"] # E-mail da conta root
+  }
+
+  tags = {
+    Name = "${var.project_name}-budget-alert"
+  }
+}
