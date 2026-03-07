@@ -2,7 +2,7 @@ use combat::{CombatEngine, Character, Element, ActionType, ElementalReaction};
 
 #[test]
 fn test_elemental_reaction_vaporize_multipliers() {
-    let engine = CombatEngine::new();
+    let engine = CombatEngine::new(None);
     
     // Hydro hitting Pyro (Strong Side) -> 2.0x
     let mut attacker_hydro = Character::new("HydroUser".to_string(), Element::Hydro, 10);
@@ -29,7 +29,7 @@ fn test_elemental_reaction_vaporize_multipliers() {
 
 #[test]
 fn test_critical_hits_consistency() {
-    let engine = CombatEngine::new();
+    let engine = CombatEngine::new(None);
     let mut attacker = Character::new("CritFarmer".to_string(), Element::Physical, 10);
     attacker.critical_rate = 1.0; // 100% crit
     attacker.critical_damage = 2.0;
@@ -43,7 +43,7 @@ fn test_critical_hits_consistency() {
 
 #[test]
 fn test_elemental_mastery_scaling() {
-    let engine = CombatEngine::new();
+    let engine = CombatEngine::new(None);
     
     // Low EM
     let mut attacker_low = Character::new("LowEM".to_string(), Element::Hydro, 10);
