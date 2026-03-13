@@ -1,68 +1,80 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_ecr_repository" "auth" {
-  name                 = "constellation-auth"
+  name                 = var.region == "us-east-1" ? "constellation-auth" : "constellation-auth-${var.region}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Name = "${var.project_name}-auth-repo"
+    Name = var.region == "us-east-1" ? "${var.project_name}-auth-repo" : "${var.project_name}-auth-repo-${var.region}"
   }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
   }
 }
 
 resource "aws_ecr_repository" "combat" {
-  name                 = "constellation-combat"
+  name                 = var.region == "us-east-1" ? "constellation-combat" : "constellation-combat-${var.region}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Name = "${var.project_name}-combat-repo"
+    Name = var.region == "us-east-1" ? "${var.project_name}-combat-repo" : "${var.project_name}-combat-repo-${var.region}"
   }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
   }
 }
 
 resource "aws_ecr_repository" "event_publisher" {
-  name                 = "constellation-event-publisher"
+  name                 = var.region == "us-east-1" ? "constellation-event-publisher" : "constellation-event-publisher-${var.region}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Name = "${var.project_name}-event-publisher-repo"
+    Name = var.region == "us-east-1" ? "${var.project_name}-event-publisher-repo" : "${var.project_name}-event-publisher-repo-${var.region}"
   }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
   }
 }
 
 resource "aws_ecr_repository" "player_state" {
-  name                 = "constellation-player_state"
+  name                 = var.region == "us-east-1" ? "constellation-player_state" : "constellation-player_state-${var.region}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Name = "${var.project_name}-player_state-repo"
+    Name = var.region == "us-east-1" ? "${var.project_name}-player_state-repo" : "${var.project_name}-player_state-repo-${var.region}"
   }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
   }
 }
 
@@ -70,16 +82,16 @@ resource "aws_ecr_repository" "player_state" {
 # ECS Cluster
 # ============================================================
 resource "aws_ecs_cluster" "game" {
-  name = "${var.project_name}-cluster"
+  name = var.region == "us-east-1" ? "${var.project_name}-cluster" : "${var.project_name}-cluster-${var.region}"
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
   }
 }
 
 # IAM Execution Role (allows Fargate to pull ECR + read Secrets Manager)
 resource "aws_iam_role" "ecs_execution_role" {
-  name = "${var.project_name}-ecs-execution-role"
+  name = var.region == "us-east-1" ? "${var.project_name}-ecs-execution-role" : "${var.project_name}-ecs-execution-role-${var.region}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -113,7 +125,7 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
 
 # ECS Task Role (allows the application to interact with AWS services like X-Ray)
 resource "aws_iam_role" "ecs_task_role" {
-  name = "${var.project_name}-ecs-task-role"
+  name = var.region == "us-east-1" ? "${var.project_name}-ecs-task-role" : "${var.project_name}-ecs-task-role-${var.region}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

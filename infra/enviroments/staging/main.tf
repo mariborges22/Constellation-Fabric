@@ -116,3 +116,16 @@ module "https" {
   project_name = var.project_name
   aws_region   = var.region
 }
+
+# ============================================================
+# State Migration (Refactoring)
+# ============================================================
+moved {
+  from = module.compute
+  to   = module.compute_us
+}
+
+moved {
+  from = module.data
+  to   = module.data_us
+}

@@ -76,9 +76,15 @@ jobs:
           role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-github-actions-role
           aws-region: us-east-1
 
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Login to Amazon ECR (US)
+        id: login-ecr-us
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to Amazon ECR (EU)
+        id: login-ecr-eu
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: eu-west-1
 
       - name: Build & Push
         uses: docker/build-push-action@v5
@@ -86,13 +92,13 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          # Tags specific to environment and commit
+          # Push to both US and EU repositories
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/constellation-auth:${{ github.ref_name }}
-            ${{ steps.login-ecr.outputs.registry }}/constellation-auth:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/constellation-player_state:${{ github.ref_name }}
-            ${{ steps.login-ecr.outputs.registry }}/constellation-player_state:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/constellation-combat:${{ github.ref_name }}
-            ${{ steps.login-ecr.outputs.registry }}/constellation-combat:${{ github.sha }}
+            ${{ steps.login-ecr-us.outputs.registry }}/constellation-auth:${{ github.ref_name }}
+            ${{ steps.login-ecr-us.outputs.registry }}/constellation-player_state:${{ github.ref_name }}
+            ${{ steps.login-ecr-us.outputs.registry }}/constellation-combat:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-auth-eu-west-1:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-player_state-eu-west-1:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-combat-eu-west-1:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

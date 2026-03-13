@@ -20,7 +20,7 @@ resource "aws_vpc" "game_vpc" {
   tags = { Name = "${var.project_name}-${var.region}-vpc" }
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true
   }
 }
 
@@ -147,7 +147,7 @@ resource "aws_lb" "game_alb" {
   subnets            = aws_subnet.public[*].id
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true
   }
 }
 

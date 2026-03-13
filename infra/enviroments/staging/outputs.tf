@@ -56,15 +56,15 @@ output "prometheus_url" {
 
 # ECR repositórios
 output "ecr_auth_uri" {
-  value = module.compute.repository_url_auth
+  value = module.compute_us.repository_url_auth
 }
 
 output "ecr_combat_uri" {
-  value = module.compute.repository_url_combat
+  value = module.compute_us.repository_url_combat
 }
 
 output "ecr_event_publisher_uri" {
-  value = module.compute.repository_url_event_publisher
+  value = module.compute_us.repository_url_event_publisher
 }
 
 # HTTPS / Cloudflare Tunnel

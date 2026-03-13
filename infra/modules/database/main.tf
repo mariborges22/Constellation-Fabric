@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 resource "aws_db_subnet_group" "db" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
