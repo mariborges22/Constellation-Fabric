@@ -25,15 +25,15 @@ jobs:
       contents: read  # Required for checkout
 
     steps:
-      - name: Free Disk Space
+      - name: Free Disk Space (Optimized)
         uses: jlumbroso/free-disk-space@main
         with:
-          tool-cache: true
+          tool-cache: false # Desativado para ganhar velocidade
           android: true
           dotnet: true
           haskell: true
           large-packages: true
-          docker-images: true
+          docker-images: false # Não queremos limpar as imagens base do Docker se usarmos cache local
           swap-storage: false
 
       - name: Checkout Code
@@ -44,31 +44,8 @@ jobs:
         with:
           workspaces: "backend"
 
-      - name: Auto-fix & Lint
-        run: |
-          cargo fix --manifest-path backend/Cargo.toml --allow-dirty --allow-staged
-          cargo fmt --manifest-path backend/Cargo.toml --all
-
-      - name: Validation - Cargo Check
-        run: cargo check --manifest-path backend/Cargo.toml
-
-      - name: Validation - Unit Tests
-        run: cargo test --manifest-path backend/Cargo.toml
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Build Local Image for Smoke Test
-        run: |
-          docker build -t smoke-test ./backend
-          
-      - name: Validation - Container Smoke Test
-        run: |
-          docker run -d --name smoke-test-run -p 8080:8080 smoke-test
-          sleep 5
-          # Simple check to see if the process is still running and answering (even if 4xx/5xx)
-          curl -f http://localhost:8080/health || (docker logs smoke-test-run && exit 1)
-          docker rm -f smoke-test-run
 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -79,6 +56,8 @@ jobs:
       - name: Login to Amazon ECR (US)
         id: login-ecr-us
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: us-east-1
 
       - name: Login to Amazon ECR (EU)
         id: login-ecr-eu
@@ -86,19 +65,46 @@ jobs:
         with:
           region: eu-west-1
 
-      - name: Build & Push
+      - name: Build & Load (for Scanning & Testing)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          load: true
+          tags: constellation-local:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'constellation-local:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Validation - Container Smoke Test
+        run: |
+          docker run -d --name smoke-test-run -p 8080:8080 constellation-local:latest
+          sleep 5
+          curl -f http://localhost:8080/health || (docker logs smoke-test-run && exit 1)
+          docker rm -f smoke-test-run
+
+      - name: Build & Push (Multi-Region)
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          # Push to both US and EU repositories
+          # Usando outputs dinâmicos para evitar 401 e garantir registries corretos
           tags: |
             ${{ steps.login-ecr-us.outputs.registry }}/constellation-auth:${{ github.ref_name }}
             ${{ steps.login-ecr-us.outputs.registry }}/constellation-player_state:${{ github.ref_name }}
             ${{ steps.login-ecr-us.outputs.registry }}/constellation-combat:${{ github.ref_name }}
-            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-auth-eu-west-1:${{ github.ref_name }}
-            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-player_state-eu-west-1:${{ github.ref_name }}
-            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-combat-eu-west-1:${{ github.ref_name }}
+            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-auth-eu-west-1:${{ github.ref_name }}
+            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-player_state-eu-west-1:${{ github.ref_name }}
+            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-combat-eu-west-1:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

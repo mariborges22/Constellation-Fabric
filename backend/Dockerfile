@@ -1,12 +1,17 @@
-FROM rust:1.91.1-bookworm AS builder
-
+# Using cargo-chef for faster builds by caching dependencies
+FROM lukemathwalker/cargo-chef:latest-rust-1.91.1-bookworm AS chef
 WORKDIR /usr/src/app
-COPY . .
 
-# Build dependencies separately to cache them if possible
-# (Using a simple build here for brevity, but could use cargo-chef for better caching)
-# Build dependencies
-# Build all target packages in a single layer to save space/time
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder 
+COPY --from=planner /usr/src/app/recipe.json recipe.json
+# Build dependencies — this layer is cached as long as Cargo.toml/Cargo.lock don't change
+RUN cargo chef cook --release --recipe-path recipe.json
+# Build application
+COPY . .
 RUN cargo build --release --package auth --package player-state --package combat
 
 # Runtime Stage
