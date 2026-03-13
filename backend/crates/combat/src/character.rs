@@ -1,4 +1,4 @@
-use crate::elements::Element;
+use shared::Element;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

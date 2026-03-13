@@ -1,25 +1,10 @@
 use crate::character::Character;
-use crate::elements::ElementalReaction;
+use shared::{Element, ElementalReaction, ActionType, CombatAction, CombatResult};
 use event_publisher::publisher::KinesisPublisher;
 use crate::logic::math::{CombatMath, AuthoritativeCombatMath};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use tracing::{info, span, Level};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ActionType {
-    NormalAttack, ChargedAttack, ElementalSkill, ElementalBurst,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CombatAction {
-    pub id: Uuid, pub actor_id: Uuid, pub action_type: ActionType, pub damage: f32, pub reaction: ElementalReaction, pub timestamp: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CombatResult {
-    pub action: CombatAction, pub target_remaining_hp: f32, pub is_critical: bool, pub final_damage: f32,
-}
 
 pub struct CombatEngine {
     math: Box<dyn CombatMath>,

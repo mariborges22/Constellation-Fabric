@@ -57,3 +57,8 @@ variable "kinesis_stream_arn" {
   description = "ARN do Kinesis Stream para permissões IAM"
   default     = ""
 }
+
+variable "region" {
+  type        = string
+  description = "AWS Region for this deployment"
+}

@@ -12,6 +12,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 player-state = { path = "../player-state" }
 event-publisher = { path = "../event-publisher" }
+shared = { path = "../../shared" }
 rand = "0.8"
 tracing = "0.1"
 tracing-subscriber = "0.3"

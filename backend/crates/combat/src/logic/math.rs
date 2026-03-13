@@ -1,6 +1,5 @@
-use crate::elements::ElementalReaction;
+use shared::{ElementalReaction, ActionType};
 use crate::character::Character;
-use crate::combat::ActionType;
 
 pub trait CombatMath: Send + Sync {
     fn calculate_base_damage(&self, attacker: &Character, action_type: ActionType) -> f32;

@@ -1,4 +1,5 @@
-use crate::{Character, ActionType};
+use crate::Character;
+use shared::ActionType;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
