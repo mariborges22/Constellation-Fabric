@@ -98,13 +98,13 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          # Usando outputs dinâmicos para evitar 401 e garantir registries corretos
+          # Usando endpoints explicitos para garantir que cada imagem vai para sua regiao
           tags: |
-            ${{ steps.login-ecr-us.outputs.registry }}/constellation-auth:${{ github.ref_name }}
-            ${{ steps.login-ecr-us.outputs.registry }}/constellation-player_state:${{ github.ref_name }}
-            ${{ steps.login-ecr-us.outputs.registry }}/constellation-combat:${{ github.ref_name }}
-            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-auth-eu-west-1:${{ github.ref_name }}
-            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-player_state-eu-west-1:${{ github.ref_name }}
-            ${{ steps.login-ecr-eu.outputs.registry }}/constellation-combat-eu-west-1:${{ github.ref_name }}
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-auth:${{ github.ref_name }}
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-player_state:${{ github.ref_name }}
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-combat:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-auth-eu-west-1:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-player_state-eu-west-1:${{ github.ref_name }}
+            721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-combat-eu-west-1:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
