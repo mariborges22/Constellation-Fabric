@@ -42,16 +42,12 @@ output "cloudflare_instructions" {
   value = "Add these to CloudFlare DNS:\n- game.constellation.com → ${module.networks_us.alb_dns_name}\n- api.constellation.com → ${module.networks_us.alb_dns_name}\n- auth.constellation.com → ${module.networks_us.alb_dns_name}\n- game-eu.constellation.com → ${module.networks_eu.alb_dns_name}"
 }
 
-output "grafana_url" {
-  value = module.monitoring.grafana_url
+output "grafana_access" {
+  value = module.monitoring.grafana_access_info
 }
 
-output "tempo_endpoint" {
-  value = module.monitoring.tempo_endpoint
-}
-
-output "prometheus_url" {
-  value = module.monitoring.prometheus_url
+output "prometheus_access" {
+  value = module.monitoring.prometheus_access_info
 }
 
 # ECR repositórios

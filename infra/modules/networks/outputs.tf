@@ -43,3 +43,11 @@ output "postgres_discovery_arn" {
 output "combat_tg_arn" {
   value = aws_lb_target_group.combat_tg.arn
 }
+
+output "public_route_table_id" {
+  value = aws_route_table.public.id
+}
+
+output "vpc_cidr" {
+  value = aws_vpc.game_vpc.cidr_block
+}

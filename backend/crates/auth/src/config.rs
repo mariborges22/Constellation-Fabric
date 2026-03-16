@@ -1,9 +1,10 @@
-﻿#[derive(Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub version: String,
     pub port: u16,
     pub rate_limit_requests: usize,
     pub log_level: String,
+    pub jwt_secret_arn: String,
 }
 
 impl Config {
@@ -20,6 +21,8 @@ impl Config {
                 .unwrap_or(100),
             log_level: std::env::var("LOG_LEVEL")
                 .unwrap_or("info".to_string()),
+            jwt_secret_arn: std::env::var("JWT_SECRET_ARN")
+                .unwrap_or("".to_string()),
         }
     }
 }

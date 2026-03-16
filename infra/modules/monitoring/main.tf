@@ -2,12 +2,12 @@
 # CloudWatch Log Groups
 # ============================================================
 resource "aws_cloudwatch_log_group" "prometheus" {
-  name              = "/ecs/${var.project_name}-prometheus"
+  name              = "/ecs/${var.project_name}-${var.environment}-prometheus"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "grafana" {
-  name              = "/ecs/${var.project_name}-grafana"
+  name              = "/ecs/${var.project_name}-${var.environment}-grafana"
   retention_in_days = 7
 }
 
@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_group" "grafana" {
 # Prometheus Task Definition
 # ============================================================
 resource "aws_ecs_task_definition" "prometheus" {
-  family                   = "${var.project_name}-prometheus"
+  family                   = "${var.project_name}-${var.environment}-prometheus"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -44,7 +44,7 @@ resource "aws_ecs_task_definition" "prometheus" {
 # Grafana Task Definition
 # ============================================================
 resource "aws_ecs_task_definition" "grafana" {
-  family                   = "${var.project_name}-grafana"
+  family                   = "${var.project_name}-${var.environment}-grafana"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -59,7 +59,8 @@ resource "aws_ecs_task_definition" "grafana" {
       portMappings = [{ containerPort = 3000, protocol = "tcp" }]
       environment = [
         { name = "GF_AUTH_ANONYMOUS_ENABLED", value = "true" },
-        { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Admin" }
+        { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Admin" },
+        { name = "GF_AUTH_DISABLE_LOGIN_FORM", value = "true" }
       ]
       logConfiguration = {
         logDriver = "awslogs"

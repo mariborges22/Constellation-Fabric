@@ -12,6 +12,12 @@ variable "project_name" {
   type = string
 }
 
+variable "environment" {
+  type        = string
+  description = "Ambiente (staging/production)"
+  default     = "staging"
+}
+
 variable "enable_global_accelerator" {
   type    = bool
   default = false

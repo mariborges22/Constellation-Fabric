@@ -1,4 +1,4 @@
-﻿use player_state::build_router;
+use player_state::build_router;
 use std::net::SocketAddr;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
@@ -16,8 +16,8 @@ async fn main() -> Result<(), anyhow::Error> {
         .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/constellation".to_string());
 
     let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .acquire_timeout(Duration::from_secs(300))
+        .max_connections(3)
+        .acquire_timeout(Duration::from_secs(30))
         .connect(&database_url)
         .await?;
 

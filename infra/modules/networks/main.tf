@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0.0-beta"
+      version = "~> 5.0"
     }
   }
 }
@@ -17,7 +17,7 @@ resource "aws_vpc" "game_vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   
-  tags = { Name = "${var.project_name}-${var.region}-vpc" }
+  tags = { Name = "${var.project_name}-${var.environment}-${var.region}-vpc" }
 
   lifecycle {
     # prevent_destroy = true
@@ -27,7 +27,7 @@ resource "aws_vpc" "game_vpc" {
 # Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.game_vpc.id
-  tags   = { Name = "${var.project_name}-${var.region}-igw" }
+  tags   = { Name = "${var.project_name}-${var.environment}-${var.region}-igw" }
 }
 
 # Subnets Públicas (Para o ALB)
@@ -37,7 +37,7 @@ resource "aws_subnet" "public" {
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index + 100) # 100, 101...
   availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
-  tags                    = { Name = "${var.project_name}-public-${count.index}" }
+  tags                    = { Name = "${var.project_name}-${var.environment}-public-${count.index}" }
 }
 
 # Subnets Privadas (Onde o backend Rust vai rodar)
@@ -46,7 +46,7 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.game_vpc.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index)
   availability_zone = data.aws_availability_zones.available.names[count.index]
-  tags              = { Name = "${var.project_name}-private-${count.index}" }
+  tags              = { Name = "${var.project_name}-${var.environment}-private-${count.index}" }
 }
 
 # Roteamento Público
@@ -66,7 +66,7 @@ resource "aws_route_table_association" "public" {
 
 # Security Group para o ALB
 resource "aws_security_group" "alb_sg" {
-  name        = substr("${var.project_name}-${var.region}-alb-sg", 0, 32)
+  name        = trim(substr("alb-sg-${var.environment}-${var.project_name}-${var.region}", 0, 32), "-")
   description = "Permitir trafego HTTP/HTTPS"
   vpc_id      = aws_vpc.game_vpc.id
 
@@ -94,7 +94,7 @@ resource "aws_security_group" "alb_sg" {
 
 # Security Group para as ECS tasks (Fargate + cloudflared sidecar)
 resource "aws_security_group" "ecs_sg" {
-  name        = substr("${var.project_name}-${var.region}-ecs-sg", 0, 32)
+  name        = trim(substr("ecs-sg-${var.environment}-${var.project_name}-${var.region}", 0, 32), "-")
   description = "ECS tasks: recebe do ALB na 8080, libera todo egress para ECR/Cloudflare"
   vpc_id      = aws_vpc.game_vpc.id
 
@@ -140,7 +140,7 @@ resource "aws_security_group_rule" "postgres_ingress" {
 # Application Load Balancer (ALB)
 resource "aws_lb" "game_alb" {
   # Limit name to 32 characters
-  name               = substr("${var.project_name}-${var.region}-alb", 0, 32)
+  name               = trim(substr("alb-${var.environment}-${var.project_name}-${var.region}", 0, 32), "-")
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -217,7 +217,7 @@ resource "aws_lb_target_group" "combat_tg" {
 # AWS Global Accelerator (Ponto de Entrada Único)
 resource "aws_globalaccelerator_accelerator" "game_accel" {
   count           = var.enable_global_accelerator ? 1 : 0
-  name            = substr("${var.project_name}-${var.region}-accel", 0, 32)
+  name            = trim(substr("accel-${var.environment}-${var.project_name}-${var.region}", 0, 32), "-")
   ip_address_type = "IPV4"
   enabled         = true
 

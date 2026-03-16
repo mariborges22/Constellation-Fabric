@@ -5,7 +5,7 @@
 
 # --- S3 Bucket for Access Logs (retained from previous plan) ---
 resource "aws_s3_bucket" "cf_logs" {
-  bucket        = "${var.project_name}-${var.aws_region}-cf-logs-721529235452" # Nome único globalmente
+  bucket        = "${var.project_name}-${var.environment}-${var.aws_region}-cf-logs-721529235452" # Nome único globalmente
   force_destroy = false
 
   lifecycle {
@@ -30,7 +30,7 @@ resource "aws_s3_bucket_acl" "cf_logs" {
 # You must populate this secret manually AFTER creating the Tunnel in the Cloudflare Dashboard.
 # The tunnel token is sensitive and must never be stored in plain text in the repo.
 resource "aws_secretsmanager_secret" "cloudflare_tunnel_token" {
-  name                    = "${var.project_name}/cloudflare-tunnel-token"
+  name                    = "${var.project_name}/${var.environment}/cloudflare-tunnel-token"
   description             = "Cloudflare Tunnel token for constellation-fabric-tunnel"
   recovery_window_in_days = 7
 

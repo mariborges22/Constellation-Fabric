@@ -3,6 +3,12 @@ variable "project_name" {
   description = "Nome do projeto"
 }
 
+variable "environment" {
+  type        = string
+  description = "Ambiente (staging/production)"
+  default     = "staging"
+}
+
 variable "subnet_ids" {
   type        = list(string)
   description = "Lista de subnet IDs públicas para o Fargate Service"
@@ -61,4 +67,28 @@ variable "kinesis_stream_arn" {
 variable "region" {
   type        = string
   description = "AWS Region for this deployment"
+}
+
+variable "db_secret_arn" {
+  type        = string
+  description = "ARN do Secrets Manager com a DATABASE_URL"
+  default     = ""
+}
+
+variable "jwt_secret_arn" {
+  type        = string
+  description = "ARN do Secrets Manager com as chaves JWT"
+  default     = ""
+}
+
+variable "rds_kms_arn" {
+  type        = string
+  description = "ARN da chave KMS para descriptografar secrets"
+  default     = ""
+}
+
+variable "image_tag" {
+  type        = string
+  description = "Tag da imagem Docker (latest, staging, etc)"
+  default     = "latest"
 }

@@ -7,7 +7,7 @@ terraform {
 }
 
 resource "aws_ecr_repository" "auth" {
-  name                 = var.region == "us-east-1" ? "constellation-auth" : "constellation-auth-${var.region}"
+  name                 = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-auth" : "${var.project_name}-${var.environment}-auth-${var.region}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -25,7 +25,7 @@ resource "aws_ecr_repository" "auth" {
 }
 
 resource "aws_ecr_repository" "combat" {
-  name                 = var.region == "us-east-1" ? "constellation-combat" : "constellation-combat-${var.region}"
+  name                 = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-combat" : "${var.project_name}-${var.environment}-combat-${var.region}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -43,7 +43,7 @@ resource "aws_ecr_repository" "combat" {
 }
 
 resource "aws_ecr_repository" "event_publisher" {
-  name                 = var.region == "us-east-1" ? "constellation-event-publisher" : "constellation-event-publisher-${var.region}"
+  name                 = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-event-publisher" : "${var.project_name}-${var.environment}-event-publisher-${var.region}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -61,7 +61,7 @@ resource "aws_ecr_repository" "event_publisher" {
 }
 
 resource "aws_ecr_repository" "player_state" {
-  name                 = var.region == "us-east-1" ? "constellation-player_state" : "constellation-player_state-${var.region}"
+  name                 = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-player_state" : "${var.project_name}-${var.environment}-player_state-${var.region}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -82,7 +82,7 @@ resource "aws_ecr_repository" "player_state" {
 # ECS Cluster
 # ============================================================
 resource "aws_ecs_cluster" "game" {
-  name = var.region == "us-east-1" ? "${var.project_name}-cluster" : "${var.project_name}-cluster-${var.region}"
+  name = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-cluster" : "${var.project_name}-${var.environment}-cluster-${var.region}"
 
   lifecycle {
     # prevent_destroy = true # Comentado para permitir o rename/migração sem erro
@@ -91,7 +91,7 @@ resource "aws_ecs_cluster" "game" {
 
 # IAM Execution Role (allows Fargate to pull ECR + read Secrets Manager)
 resource "aws_iam_role" "ecs_execution_role" {
-  name = var.region == "us-east-1" ? "${var.project_name}-ecs-execution-role" : "${var.project_name}-ecs-execution-role-${var.region}"
+  name = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-ecs-exe-role" : "${var.project_name}-${var.environment}-ecs-exe-role-${var.region}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -115,17 +115,24 @@ resource "aws_iam_role_policy" "ecs_secrets_access" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
-      Resource = [var.tunnel_secret_arn]
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = compact([var.tunnel_secret_arn, var.db_secret_arn, var.jwt_secret_arn])
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = compact([var.rds_kms_arn])
+      }
+    ]
   })
 }
 
 # ECS Task Role (allows the application to interact with AWS services like X-Ray)
 resource "aws_iam_role" "ecs_task_role" {
-  name = var.region == "us-east-1" ? "${var.project_name}-ecs-task-role" : "${var.project_name}-ecs-task-role-${var.region}"
+  name = var.region == "us-east-1" ? "${var.project_name}-${var.environment}-ecs-task-role" : "${var.project_name}-${var.environment}-ecs-task-role-${var.region}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -166,17 +173,17 @@ resource "aws_iam_role_policy" "ecs_task_monitoring" {
 # CloudWatch Log Groups for ECS containers
 # ============================================================
 resource "aws_cloudwatch_log_group" "auth" {
-  name              = "/ecs/${var.project_name}-auth"
+  name              = "/ecs/${var.project_name}-${var.environment}-auth"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "cloudflared" {
-  name              = "/ecs/${var.project_name}-cloudflared"
+  name              = "/ecs/${var.project_name}-${var.environment}-cloudflared"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "combat" {
-  name              = "/ecs/${var.project_name}-combat"
+  name              = "/ecs/${var.project_name}-${var.environment}-combat"
   retention_in_days = 7
 }
 
@@ -184,7 +191,7 @@ resource "aws_cloudwatch_log_group" "combat" {
 # ECS Task Definition — Auth app + cloudflared sidecar
 # ============================================================
 resource "aws_ecs_task_definition" "auth" {
-  family                   = "${var.project_name}-auth"
+  family                   = "${var.project_name}-${var.environment}-auth"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -195,10 +202,16 @@ resource "aws_ecs_task_definition" "auth" {
   container_definitions = jsonencode([
     {
       name      = "auth"
-      image     = "${aws_ecr_repository.auth.repository_url}:staging"
+      image     = "${aws_ecr_repository.auth.repository_url}:${var.image_tag}"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
       command      = ["auth"]
+      environment = [
+        { name = "PORT", value = "8080" }
+      ]
+      secrets = var.db_secret_arn != "" ? [
+        { name = "DATABASE_URL", valueFrom = var.db_secret_arn }
+      ] : []
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -233,7 +246,7 @@ resource "aws_ecs_task_definition" "auth" {
 # ECS Task Definition — Player State
 # ============================================================
 resource "aws_ecs_task_definition" "player_state" {
-  family                   = "${var.project_name}-player_state"
+  family                   = "${var.project_name}-${var.environment}-player_state"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -244,14 +257,16 @@ resource "aws_ecs_task_definition" "player_state" {
   container_definitions = jsonencode([
     {
       name      = "player-state"
-      image     = "${aws_ecr_repository.player_state.repository_url}:staging"
+      image     = "${aws_ecr_repository.player_state.repository_url}:${var.image_tag}"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
       command      = ["player-state"]
       environment = [
-        { name = "DATABASE_URL", value = "postgresql://postgres:${var.db_password}@${var.db_endpoint}/constellation" },
         { name = "PORT", value = "8080" }
       ]
+      secrets = var.db_secret_arn != "" ? [
+        { name = "DATABASE_URL", valueFrom = var.db_secret_arn }
+      ] : []
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -266,12 +281,12 @@ resource "aws_ecs_task_definition" "player_state" {
 
 
 resource "aws_cloudwatch_log_group" "player_state" {
-  name              = "/ecs/${var.project_name}-player_state"
+  name              = "/ecs/${var.project_name}-${var.environment}-player_state"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "postgres" {
-  name              = "/ecs/${var.project_name}-postgres"
+  name              = "/ecs/${var.project_name}-${var.environment}-postgres"
   retention_in_days = 7
 }
 
@@ -279,7 +294,7 @@ resource "aws_cloudwatch_log_group" "postgres" {
 # ECS Task Definition — Combat
 # ============================================================
 resource "aws_ecs_task_definition" "combat" {
-  family                   = "${var.project_name}-combat"
+  family                   = "${var.project_name}-${var.environment}-combat"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -290,15 +305,19 @@ resource "aws_ecs_task_definition" "combat" {
   container_definitions = jsonencode([
     {
       name      = "combat"
-      image     = "${aws_ecr_repository.combat.repository_url}:staging"
+      image     = "${aws_ecr_repository.combat.repository_url}:${var.image_tag}"
       essential = true
       portMappings = [{ containerPort = 8080, protocol = "tcp" }]
       command      = ["combat"]
       environment = [
+        { name = "AWS_REGION", value = var.region },
         { name = "PLAYER_STATE_API", value = "http://player-state.local:8080/api/v1/players" },
         { name = "KINESIS_STREAM_NAME", value = var.kinesis_stream_name },
         { name = "PORT", value = "8080" }
       ]
+      secrets = var.db_secret_arn != "" ? [
+        { name = "DATABASE_URL", valueFrom = var.db_secret_arn }
+      ] : []
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -381,8 +400,77 @@ resource "aws_ecs_service" "combat" {
     container_name   = "combat"
     container_port   = 8080
   }
+}
 
-  # lifecycle {
-  #   ignore_changes = [task_definition]
-  # }
+# ============================================================
+# ECS Autoscaling
+# ============================================================
+
+resource "aws_appautoscaling_target" "auth" {
+  max_capacity       = 5
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.game.name}/${aws_ecs_service.auth.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "auth_cpu" {
+  name               = "auth-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.auth.resource_id
+  scalable_dimension = aws_appautoscaling_target.auth.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.auth.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value = 70.0
+  }
+}
+
+resource "aws_appautoscaling_target" "player_state" {
+  max_capacity       = 5
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.game.name}/${aws_ecs_service.player_state.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "player_state_cpu" {
+  name               = "player-state-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.player_state.resource_id
+  scalable_dimension = aws_appautoscaling_target.player_state.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.player_state.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value = 70.0
+  }
+}
+
+resource "aws_appautoscaling_target" "combat" {
+  max_capacity       = 10 # Combat é mais pesado
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.game.name}/${aws_ecs_service.combat.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "combat_cpu" {
+  name               = "combat-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.combat.resource_id
+  scalable_dimension = aws_appautoscaling_target.combat.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.combat.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value = 70.0
+  }
 }

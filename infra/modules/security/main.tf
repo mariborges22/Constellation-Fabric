@@ -8,6 +8,7 @@ terraform {
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
+  count = var.create_global_resources ? 1 : 0
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [var.github_thumbprint]
@@ -19,7 +20,8 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 # IAM Role para o GitHub Actions assumir
 resource "aws_iam_role" "github_actions_role" {
-  name = "${var.project_name}-github-actions-role"
+  count = var.create_global_resources ? 1 : 0
+  name  = "${var.project_name}-github-actions-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -28,7 +30,7 @@ resource "aws_iam_role" "github_actions_role" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Effect = "Allow"
         Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
+          Federated = aws_iam_openid_connect_provider.github[0].arn
         }
         Condition = {
           StringLike = {
@@ -50,11 +52,23 @@ resource "aws_iam_role" "github_actions_role" {
 # Anexar política de administrador (Apenas para Staging/Demonstração)
 # Em produção, use uma política mais restrita!
 resource "aws_iam_role_policy_attachment" "admin_access" {
-  role       = aws_iam_role.github_actions_role.name
+  count      = var.create_global_resources ? 1 : 0
+  role       = aws_iam_role.github_actions_role[0].name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
+
+resource "aws_secretsmanager_secret" "jwt_keys" {
+  name        = "${var.project_name}-${var.environment}-jwt-keys-v1"
+  description = "Chaves RSA (PEM) para assinatura e validação de JWT - Amb: ${var.environment}"
+
+  tags = {
+    Name = "${var.project_name}-jwt-keys"
+  }
+}
+
 resource "aws_budgets_budget" "cost_alert" {
-  name              = "${var.project_name}-monthly-budget"
+  count             = var.create_global_resources ? 1 : 0
+  name              = "${var.project_name}-monthly-budget-v2"
   budget_type       = "COST"
   limit_amount      = "5"
   limit_unit        = "USD"

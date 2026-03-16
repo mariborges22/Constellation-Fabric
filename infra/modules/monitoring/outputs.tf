@@ -1,11 +1,7 @@
-output "grafana_url" {
-  value = "https://grafana.${var.project_name}.io"
+output "grafana_access_info" {
+  value = "Grafana is available on port 3000 of its ECS Task Public IP. Run 'scripts/get-monitoring-ips.ps1' to find it."
 }
 
-output "tempo_endpoint" {
-  value = "tempo.${var.project_name}.io:4317"
-}
-
-output "prometheus_url" {
-  value = "https://prometheus.${var.project_name}.io"
+output "prometheus_access_info" {
+  value = "Prometheus is available on port 9090 of its ECS Task Public IP. Run 'scripts/get-monitoring-ips.ps1' to find it."
 }
