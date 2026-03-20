@@ -1,4 +1,3 @@
-use aws_config::SdkConfig;
 use aws_sdk_kinesis::Client;
 use serde::Serialize;
 use serde_json::to_vec;

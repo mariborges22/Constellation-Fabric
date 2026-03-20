@@ -1,8 +1,7 @@
 use crate::character::Character;
-use shared::{Element, ElementalReaction, ActionType, CombatAction, CombatResult};
+use shared::{ActionType, CombatAction, CombatResult};
 use event_publisher::publisher::KinesisPublisher;
 use crate::logic::math::{CombatMath, AuthoritativeCombatMath};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use tracing::{info, span, Level};
 

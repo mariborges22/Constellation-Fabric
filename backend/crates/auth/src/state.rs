@@ -1,18 +1,9 @@
-﻿use crate::{AppState, config};
+use crate::{AppState, config};
 use axum::{Router, routing::{get, post}};
 use std::sync::Arc;
 use tracing::info;
 use std::net::SocketAddr;
 
-impl AppState {
-    pub fn new(version: &str, rate_limit_requests: usize) -> Self {
-        Self {
-            version: version.to_string(),
-            rate_limiter: crate::rate_limit::RateLimiter::new(rate_limit_requests),
-            bot_detector: crate::bot_detection::BotDetector::new(),
-        }
-    }
-}
 
 pub fn build_router(state: Arc<AppState>) -> Router {
     Router::new()
