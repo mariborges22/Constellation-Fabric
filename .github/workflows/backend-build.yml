@@ -2,7 +2,7 @@ name: Backend Build & Push
 
 on:
   push:
-    branches: [staging, main]
+    branches: [staging, master]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-build.yml'
@@ -18,7 +18,7 @@ jobs:
     name: Build & Push (${{ github.ref_name }})
     runs-on: ubuntu-latest
     # Map branch to GitHub Environment
-    environment: ${{ (github.ref_name == 'main' && 'production') || 'staging' }}
+    environment: ${{ (github.ref_name == 'master' && 'production') || 'staging' }}
     
     permissions:
       id-token: write # Required for OIDC
@@ -93,20 +93,20 @@ jobs:
       - name: Tag & Push to ECR (US)
         run: |
           # Nomes baseados na convenção do Terraform: constellation-fabric-[env]-[crate]
-          REPO_PREFIX="721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}"
+          REPO_PREFIX="721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'master' && 'production') || 'staging' }}"
           
-          docker tag constellation-local:latest ${REPO_PREFIX}-auth:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker tag constellation-local:latest ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker tag constellation-local:latest ${REPO_PREFIX}-combat:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
+          docker tag constellation-local:latest ${REPO_PREFIX}-auth:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
+          docker tag constellation-local:latest ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
+          docker tag constellation-local:latest ${REPO_PREFIX}-combat:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
           
-          docker push ${REPO_PREFIX}-auth:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker push ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker push ${REPO_PREFIX}-combat:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
+          docker push ${REPO_PREFIX}-auth:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
+          docker push ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
+          docker push ${REPO_PREFIX}-combat:${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}
 
       - name: Tag & Push to ECR (EU)
         run: |
-          REPO_PREFIX="721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}"
-          TAG_NAME="${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}"
+          REPO_PREFIX="721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'master' && 'production') || 'staging' }}"
+          TAG_NAME="${{ (github.ref_name == 'master' && 'latest') || github.ref_name }}"
           
           docker tag constellation-local:latest ${REPO_PREFIX}-auth-eu-west-1:${TAG_NAME}
           docker tag constellation-local:latest ${REPO_PREFIX}-player_state-eu-west-1:${TAG_NAME}
