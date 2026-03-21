@@ -23,7 +23,7 @@ export default function () {
         player_id: uuidv4(),
         character_id: uuidv4(),
         target_id: uuidv4(),
-        action_type: "Attack"
+        action_type: "NormalAttack"
     });
 
     const params = {
