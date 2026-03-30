@@ -1,5 +1,6 @@
 pub mod metrics;
 pub mod tracing;
+pub mod error;
 
 pub use metrics::Metrics;
 

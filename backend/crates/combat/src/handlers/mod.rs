@@ -1,6 +1,7 @@
-﻿use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use std::sync::Arc;
 use crate::{CombatEngine, CombatActionRequestV1, CombatResponseV1, Character};
+use crate::error::{CombatError, CombatResult};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -10,9 +11,11 @@ pub struct AppState {
 pub async fn combat_handler(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CombatActionRequestV1>,
-) -> impl IntoResponse {
-    // 1. Validate Idempotency (in production, we'd check a redis/db cache)
-    // For now, we assume it's valid or handled at infrastructure level.
+) -> CombatResult<impl IntoResponse> {
+    // 1. Validate Idempotency (Mocked for now)
+    if req.idempotency_key.is_empty() {
+        return Err(CombatError::InvalidAction("Missing idempotency key".to_string()));
+    }
 
     // 2. Fetch Characters (Mocking data for now; in production, call player-state service)
     // Here we simulate the authoritative state retrieval
@@ -36,7 +39,7 @@ pub async fn combat_handler(
         idempotency_key: req.idempotency_key,
     };
 
-    (StatusCode::OK, Json(response))
+    Ok(Json(response))
 }
 
 pub async fn health_check_handler() -> impl IntoResponse {

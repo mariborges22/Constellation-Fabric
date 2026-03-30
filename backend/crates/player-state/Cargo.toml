@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "player-state"
 version = "0.1.0"
 edition = "2021"
@@ -17,6 +17,7 @@ tower-http = { version = "0.5", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 anyhow = "1.0"
+thiserror = "1.0"
 validator = { version = "0.16", features = ["derive"] }
 shared = { path = "../../shared" }
 

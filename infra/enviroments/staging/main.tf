@@ -57,54 +57,92 @@ module "database" {
   secondary_vpc_cidr = module.networks_eu.vpc_cidr
 }
 
-module "compute_us" {
-  source = "../../modules/compute"
+# module "compute_us" {
+#   source = "../../modules/compute"
+#   providers = {
+#     aws = aws.primary
+#   }
+# 
+#   project_name        = var.project_name
+#   environment         = "staging"
+#   region              = "us-east-1"
+#   subnet_ids          = module.networks_us.public_subnet_ids
+#   security_group_id   = module.networks_us.ecs_security_group_id
+#   auth_tg_arn         = module.networks_us.target_group_arn
+#   tunnel_secret_arn   = module.https.tunnel_secret_arn
+#   player_state_tg_arn = module.networks_us.player_state_tg_arn
+#   combat_tg_arn       = module.networks_us.combat_tg_arn
+#   db_password         = var.db_password
+#   db_endpoint         = module.database.db_instance_endpoint
+#   db_secret_arn       = module.database.db_secret_arn
+#   jwt_secret_arn      = module.security.jwt_secret_arn
+#   kinesis_stream_name = module.data_us.kinesis_stream_name
+#   kinesis_stream_arn  = module.data_us.kinesis_stream_arn
+#   rds_kms_arn         = module.database.rds_kms_arn
+#   image_tag           = "staging"
+# }
+
+module "compute_swarm_us" {
+  source = "../../modules/compute-swarm"
   providers = {
     aws = aws.primary
   }
 
-  project_name        = var.project_name
-  environment         = "staging"
-  region              = "us-east-1"
-  subnet_ids          = module.networks_us.public_subnet_ids
-  security_group_id   = module.networks_us.ecs_security_group_id
-  auth_tg_arn         = module.networks_us.target_group_arn
-  tunnel_secret_arn   = module.https.tunnel_secret_arn
-  player_state_tg_arn = module.networks_us.player_state_tg_arn
-  combat_tg_arn       = module.networks_us.combat_tg_arn
-  db_password         = var.db_password
-  db_endpoint         = module.database.db_instance_endpoint
-  db_secret_arn       = module.database.db_secret_arn
-  jwt_secret_arn      = module.security.jwt_secret_arn
-  kinesis_stream_name = module.data_us.kinesis_stream_name
-  kinesis_stream_arn  = module.data_us.kinesis_stream_arn
-  rds_kms_arn         = module.database.rds_kms_arn
-  image_tag           = "staging"
+  project_name       = var.project_name
+  environment        = "staging"
+  region             = "us-east-1"
+  vpc_id             = module.networks_us.vpc_id
+  subnet_ids         = module.networks_us.public_subnet_ids
+  security_group_id  = module.networks_us.ecs_security_group_id
+  db_secret_arn      = module.database.db_secret_arn
+  jwt_secret_arn     = module.security.jwt_secret_arn
+  tunnel_secret_arn  = module.https.tunnel_secret_arn
+  kinesis_stream_arn = module.data_us.kinesis_stream_arn
+  rds_kms_arn        = module.database.rds_kms_arn
 }
 
-module "compute_eu" {
-  source = "../../modules/compute"
+# module "compute_eu" {
+#   source = "../../modules/compute"
+#   providers = {
+#     aws = aws.secondary
+#   }
+# 
+#   project_name        = var.project_name
+#   environment         = "staging"
+#   region              = "eu-west-1"
+#   subnet_ids          = module.networks_eu.public_subnet_ids
+#   security_group_id   = module.networks_eu.ecs_security_group_id
+#   auth_tg_arn         = module.networks_eu.target_group_arn
+#   tunnel_secret_arn   = module.https.tunnel_secret_arn
+#   player_state_tg_arn = module.networks_eu.player_state_tg_arn
+#   combat_tg_arn       = module.networks_eu.combat_tg_arn
+#   db_password         = var.db_password
+#   db_endpoint         = module.database.db_instance_endpoint 
+#   db_secret_arn       = module.database.db_secret_arn
+#   jwt_secret_arn      = module.security.jwt_secret_arn
+#   kinesis_stream_name = module.data_eu.kinesis_stream_name
+#   kinesis_stream_arn  = module.data_eu.kinesis_stream_arn
+#   rds_kms_arn         = module.database.rds_kms_arn
+#   image_tag           = "staging"
+# }
+
+module "compute_swarm_eu" {
+  source = "../../modules/compute-swarm"
   providers = {
     aws = aws.secondary
   }
 
-  project_name        = var.project_name
-  environment         = "staging"
-  region              = "eu-west-1"
-  subnet_ids          = module.networks_eu.public_subnet_ids
-  security_group_id   = module.networks_eu.ecs_security_group_id
-  auth_tg_arn         = module.networks_eu.target_group_arn
-  tunnel_secret_arn   = module.https.tunnel_secret_arn
-  player_state_tg_arn = module.networks_eu.player_state_tg_arn
-  combat_tg_arn       = module.networks_eu.combat_tg_arn
-  db_password         = var.db_password
-  db_endpoint         = module.database.db_instance_endpoint 
-  db_secret_arn       = module.database.db_secret_arn
-  jwt_secret_arn      = module.security.jwt_secret_arn
-  kinesis_stream_name = module.data_eu.kinesis_stream_name
-  kinesis_stream_arn  = module.data_eu.kinesis_stream_arn
-  rds_kms_arn         = module.database.rds_kms_arn
-  image_tag           = "staging"
+  project_name       = var.project_name
+  environment        = "staging"
+  region             = "eu-west-1"
+  vpc_id             = module.networks_eu.vpc_id
+  subnet_ids         = module.networks_eu.public_subnet_ids
+  security_group_id  = module.networks_eu.ecs_security_group_id
+  db_secret_arn      = module.database.db_secret_arn
+  jwt_secret_arn     = module.security.jwt_secret_arn
+  tunnel_secret_arn  = module.https.tunnel_secret_arn
+  kinesis_stream_arn = module.data_eu.kinesis_stream_arn
+  rds_kms_arn        = module.database.rds_kms_arn
 }
 
 module "data_us" {

@@ -126,6 +126,47 @@ resource "aws_security_group" "ecs_sg" {
   }
 }
 
+# Docker Swarm Cluster Communication
+resource "aws_security_group_rule" "swarm_management" {
+  type              = "ingress"
+  from_port         = 2377
+  to_port           = 2377
+  protocol          = "tcp"
+  security_group_id = aws_security_group.ecs_sg.id
+  self              = true
+  description       = "Swarm cluster management"
+}
+
+resource "aws_security_group_rule" "swarm_node_comm_tcp" {
+  type              = "ingress"
+  from_port         = 7946
+  to_port           = 7946
+  protocol          = "tcp"
+  security_group_id = aws_security_group.ecs_sg.id
+  self              = true
+  description       = "Swarm node communication (TCP)"
+}
+
+resource "aws_security_group_rule" "swarm_node_comm_udp" {
+  type              = "ingress"
+  from_port         = 7946
+  to_port           = 7946
+  protocol          = "udp"
+  security_group_id = aws_security_group.ecs_sg.id
+  self              = true
+  description       = "Swarm node communication (UDP)"
+}
+
+resource "aws_security_group_rule" "swarm_overlay_udp" {
+  type              = "ingress"
+  from_port         = 4789
+  to_port           = 4789
+  protocol          = "udp"
+  security_group_id = aws_security_group.ecs_sg.id
+  self              = true
+  description       = "Swarm overlay network (UDP)"
+}
+
 # Allow Postgres internal traffic
 resource "aws_security_group_rule" "postgres_ingress" {
   type                     = "ingress"

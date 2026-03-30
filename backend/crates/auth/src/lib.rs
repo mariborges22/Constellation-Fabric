@@ -7,6 +7,7 @@ pub mod bot_detection;
 pub mod handlers;
 pub mod middleware;
 pub mod state;
+pub mod error;
 
 // AppState definition
 #[derive(Clone)]

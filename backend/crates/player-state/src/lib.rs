@@ -11,6 +11,9 @@ use std::sync::Arc;
 use uuid::Uuid;
 use validator::Validate;
 
+mod error;
+pub use error::{PlayerStateError, PlayerStateResult};
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -59,11 +62,11 @@ pub struct UpdatePlayerStateRequest {
 
 #[async_trait]
 pub trait PlayerRepository: Send + Sync {
-    async fn create_player(&self, req: CreatePlayerRequest) -> Result<Player, StatusCode>;
-    async fn get_player(&self, player_id: Uuid) -> Result<Player, StatusCode>;
-    async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> Result<PlayerStateResponse, StatusCode>;
-    async fn check_idempotency(&self, key: Uuid) -> Result<Option<(serde_json::Value, i16)>, StatusCode>;
-    async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> Result<(), StatusCode>;
+    async fn create_player(&self, req: CreatePlayerRequest) -> PlayerStateResult<Player>;
+    async fn get_player(&self, player_id: Uuid) -> PlayerStateResult<Player>;
+    async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> PlayerStateResult<PlayerStateResponse>;
+    async fn check_idempotency(&self, key: Uuid) -> PlayerStateResult<Option<(serde_json::Value, i16)>>;
+    async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> PlayerStateResult<()>;
 }
 
 // ============================================================================
@@ -94,11 +97,11 @@ impl PlayerRepository for PostgresPlayerRepository {
         .map_err(|e| {
             if let Some(db_err) = e.as_database_error() {
                 if db_err.is_unique_violation() {
-                    return StatusCode::CONFLICT;
+                    return PlayerStateError::Conflict("Player already exists".to_string());
                 }
             }
             tracing::error!("Database error creating player: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            PlayerStateError::DatabaseError(e.to_string())
         })
     }
 
@@ -112,7 +115,7 @@ impl PlayerRepository for PostgresPlayerRepository {
         .await
         .map_err(|e| {
             tracing::error!("Database error getting player: {}", e);
-            StatusCode::NOT_FOUND
+            PlayerStateError::NotFound(player_id.to_string())
         })
     }
 
@@ -134,7 +137,7 @@ impl PlayerRepository for PostgresPlayerRepository {
         .await
         .map_err(|e| {
             tracing::error!("Database error updating player state: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            PlayerStateError::DatabaseError(e.to_string())
         })
     }
 
@@ -145,7 +148,7 @@ impl PlayerRepository for PostgresPlayerRepository {
         .bind(key)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))
     }
 
     async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> Result<(), StatusCode> {
@@ -158,7 +161,7 @@ impl PlayerRepository for PostgresPlayerRepository {
         .execute(&self.pool)
         .await
         .map(|_| ())
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))
     }
 }
 
@@ -188,25 +191,19 @@ pub mod handlers {
     pub async fn create_player_handler(
         State(repo): State<SharedRepo>,
         Json(req): Json<CreatePlayerRequest>,
-    ) -> impl IntoResponse {
-        if let Err(e) = req.validate() {
-            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))).into_response();
-        }
+    ) -> PlayerStateResult<impl IntoResponse> {
+        req.validate().map_err(|e| PlayerStateError::ValidationError(e.to_string()))?;
 
-        match repo.create_player(req).await {
-            Ok(player) => (StatusCode::CREATED, Json(player)).into_response(),
-            Err(err) => (err, Json(serde_json::json!({"error": "Failed to create player"}))).into_response(),
-        }
+        let player = repo.create_player(req).await?;
+        Ok((StatusCode::CREATED, Json(player)))
     }
 
     pub async fn get_player_handler(
         State(repo): State<SharedRepo>,
         Path(player_id): Path<Uuid>,
-    ) -> impl IntoResponse {
-        match repo.get_player(player_id).await {
-            Ok(player) => (StatusCode::OK, Json(player)).into_response(),
-            Err(err) => (err, Json(serde_json::json!({"error": "Player not found"}))).into_response(),
-        }
+    ) -> PlayerStateResult<impl IntoResponse> {
+        let player = repo.get_player(player_id).await?;
+        Ok((StatusCode::OK, Json(player)))
     }
 
     pub async fn update_player_state_handler(
@@ -214,10 +211,8 @@ pub mod handlers {
         headers: HeaderMap,
         Path(player_id): Path<Uuid>,
         Json(req): Json<UpdatePlayerStateRequest>,
-    ) -> impl IntoResponse {
-        if let Err(e) = req.validate() {
-            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": e.to_string()}))).into_response();
-        }
+    ) -> PlayerStateResult<impl IntoResponse> {
+        req.validate().map_err(|e| PlayerStateError::ValidationError(e.to_string()))?;
 
         let idempotency_key = headers.get("X-Idempotency-Key")
             .and_then(|h| h.to_str().ok())
@@ -226,19 +221,15 @@ pub mod handlers {
         if let Some(key) = idempotency_key {
             if let Ok(Some((body, status))) = repo.check_idempotency(key).await {
                 let status = StatusCode::from_u16(status as u16).unwrap_or(StatusCode::OK);
-                return (status, Json(body)).into_response();
+                return Ok((status, Json(body)).into_response());
             }
         }
 
-        match repo.update_player_state(player_id, req).await {
-            Ok(state) => {
-                let res_body = serde_json::to_value(&state).unwrap_or_default();
-                if let Some(key) = idempotency_key {
-                    let _ = repo.save_idempotency(key, &res_body, StatusCode::OK.as_u16()).await;
-                }
-                (StatusCode::OK, Json(state)).into_response()
-            },
-            Err(err) => (err, Json(serde_json::json!({"error": "Failed to update state"}))).into_response(),
+        let state = repo.update_player_state(player_id, req).await?;
+        let res_body = serde_json::to_value(&state).unwrap_or_default();
+        if let Some(key) = idempotency_key {
+            let _ = repo.save_idempotency(key, &res_body, StatusCode::OK.as_u16()).await;
         }
+        Ok((StatusCode::OK, Json(state)).into_response())
     }
 }

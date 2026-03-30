@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  auth:
+    image: ${ECR_URL}/constellation-staging-auth:latest
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    environment:
+      - DATABASE_URL_FILE=/run/secrets/db_url
+      - JWT_SECRET_FILE=/run/secrets/jwt_key
+    secrets:
+      - db_url
+      - jwt_key
+    networks:
+      - constellation-net
+
+  player-state:
+    image: ${ECR_URL}/constellation-staging-player_state:latest
+    deploy:
+      replicas: 2
+    secrets:
+      - db_url
+    networks:
+      - constellation-net
+
+  combat:
+    image: ${ECR_URL}/constellation-staging-combat:latest
+    deploy:
+      replicas: 3
+    environment:
+      - PLAYER_STATE_API=http://player-state:8080/api/v1/players
+    networks:
+      - constellation-net
+
+  nakama:
+    image: ${ECR_URL}/constellation-staging-nakama:latest
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up --database.address postgres:5432 &&
+        /nakama/nakama --config /nakama/data/config.yml --database.address postgres:5432
+    expose:
+      - "7349"
+      - "7350"
+      - "7351"
+    networks:
+      - constellation-net
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN_FILE=/run/secrets/tunnel_token
+    secrets:
+      - tunnel_token
+    networks:
+      - constellation-net
+
+networks:
+  constellation-net:
+    driver: overlay
+    attachable: true
+
+secrets:
+  db_url:
+    external: true
+  jwt_key:
+    external: true
+  tunnel_token:
+    external: true

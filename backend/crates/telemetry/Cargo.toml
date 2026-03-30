@@ -16,6 +16,7 @@ serde_json = "1.0"
 axum = "0.7"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = "0.4"
+thiserror = "1.0"
 
 [lib]
 name = "telemetry"

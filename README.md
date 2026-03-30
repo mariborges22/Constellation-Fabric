@@ -27,7 +27,7 @@ Este projeto foi desenhado para ser o laboratório perfeito para quem quer apren
 - **Silver Layer**: Modele os logs de combate em tabelas dimensionais.
 - **Gold Layer**: Gere insights estratégicos sobre o meta de jogo.
 
-Confira o [Guia Medallion](./docs/MEDALLION_BLUEPRINT.md) e o [Guia Airflow](./docs/AIRFLOW_GUIDE.md).
+Confira o [Guia Medallion](./docs/MEDALLION_BLUEPRINT.md), o [Architectural Decision Records (ADR)](./docs/ADR.md) e o [Playbook de Data Engineering](./docs/DATA_PLAYBOOK.md).
 
 ## 🛠️ Começando
 ### Pré-requisitos
