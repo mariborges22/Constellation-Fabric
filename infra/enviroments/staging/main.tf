@@ -106,4 +106,3 @@ module "https" {
   environment  = "staging"
   aws_region   = var.region
 }
-

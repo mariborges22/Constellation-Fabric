@@ -17,7 +17,6 @@ output "vpc_eu_west_id" {
   value = module.networks_eu.vpc_id
 }
 
-# ALB DNS Names (pra usar no CloudFlare)
 output "alb_dns_us" {
   value       = module.networks_us.alb_dns_name
   description = "ALB DNS name (us-east-1)"
@@ -30,27 +29,21 @@ output "alb_dns_eu" {
 
 output "alb_url_us" {
   value       = "http://${module.networks_us.alb_dns_name}"
-  description = "ALB URL (us-east-1)"
 }
 
 output "alb_url_eu" {
   value       = "http://${module.networks_eu.alb_dns_name}"
-  description = "ALB URL (eu-west-1)"
 }
 
-output "cloudflare_instructions" {
-  value = "Add these to CloudFlare DNS:\n- game.constellation.com → ${module.networks_us.alb_dns_name}\n- api.constellation.com → ${module.networks_us.alb_dns_name}\n- auth.constellation.com → ${module.networks_us.alb_dns_name}\n- game-eu.constellation.com → ${module.networks_eu.alb_dns_name}"
+# DynamoDB Table Names (Replicas)
+output "player_state_table_name" {
+  value = module.database_global.player_state_table_arn
 }
 
-# HTTPS / Cloudflare Tunnel
-output "tunnel_secret_arn" {
-  value       = module.https.tunnel_secret_arn
-  description = "ARN do Secret com o token do Cloudflare Tunnel"
-  sensitive   = true
+output "combat_logs_table_name" {
+  value = module.database_global.combat_logs_table_arn
 }
 
-output "cf_access_logs_bucket" {
-  value     = module.https.access_logs_bucket
-  sensitive = true
+output "ecr_repository_urls" {
+  value = module.ecr.repository_urls
 }
-
