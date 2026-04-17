@@ -47,7 +47,7 @@ jobs:
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-staging-us-east-1-github-actions-role
+          role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-github-actions-role
           aws-region: us-east-1
 
       - name: Login to Amazon ECR (US)
