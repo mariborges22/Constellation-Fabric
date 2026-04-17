@@ -1,0 +1,4 @@
+=== cargo_version ===
+Command: cargo --version
+
+cargo 1.94.1 (29ea6fb6a 2026-03-24)

@@ -1,0 +1,5 @@
+=== ps_pid_4136 ===
+Command: ps -fp 4136
+
+UID          PID    PPID  C STIME TTY          TIME CMD
+[WARN] Command failed with non-zero exit

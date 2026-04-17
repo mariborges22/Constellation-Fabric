@@ -1,0 +1,5 @@
+=== curl_nakama_base ===
+Command: curl -sS --max-time 5 http://localhost:7350/
+
+curl: (7) Failed to connect to localhost port 7350 after 0 ms: Couldn't connect to server
+[WARN] Command failed with non-zero exit

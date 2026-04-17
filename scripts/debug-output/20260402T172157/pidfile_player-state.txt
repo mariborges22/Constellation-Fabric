@@ -1,0 +1,4 @@
+=== pidfile_player-state ===
+Command: cat /mnt/d/Área de Trabalho/Constellation-Fabric/scripts/.run-wsl-local/pids/player-state.pid
+
+4136

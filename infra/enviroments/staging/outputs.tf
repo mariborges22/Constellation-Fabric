@@ -42,27 +42,6 @@ output "cloudflare_instructions" {
   value = "Add these to CloudFlare DNS:\n- game.constellation.com → ${module.networks_us.alb_dns_name}\n- api.constellation.com → ${module.networks_us.alb_dns_name}\n- auth.constellation.com → ${module.networks_us.alb_dns_name}\n- game-eu.constellation.com → ${module.networks_eu.alb_dns_name}"
 }
 
-output "grafana_access" {
-  value = module.monitoring.grafana_access_info
-}
-
-output "prometheus_access" {
-  value = module.monitoring.prometheus_access_info
-}
-
-# ECR repositórios
-output "ecr_auth_uri" {
-  value = module.compute_us.repository_url_auth
-}
-
-output "ecr_combat_uri" {
-  value = module.compute_us.repository_url_combat
-}
-
-output "ecr_event_publisher_uri" {
-  value = module.compute_us.repository_url_event_publisher
-}
-
 # HTTPS / Cloudflare Tunnel
 output "tunnel_secret_arn" {
   value       = module.https.tunnel_secret_arn

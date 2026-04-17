@@ -1,0 +1,4 @@
+=== env_pwd ===
+Command: pwd
+
+/mnt/d/Área de Trabalho/Constellation-Fabric

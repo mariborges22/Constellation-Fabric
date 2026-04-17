@@ -1,0 +1,4 @@
+=== resolve_host_docker_internal ===
+Command: python3 -
+
+host.docker.internal -> 192.168.100.92

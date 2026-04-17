@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: constellation
+  labels:
+    name: constellation
+    vision: equestria-odyssey

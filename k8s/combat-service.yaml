@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: combat-service
+  namespace: constellation
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::721529235452:role/constellation-fabric-staging-us-east-1-combat-irsa"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: combat-service
+  namespace: constellation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: combat
+  template:
+    metadata:
+      labels:
+        app: combat
+    spec:
+      serviceAccountName: combat-service
+      containers:
+      - name: combat
+        image: 721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-staging-combat:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: COMBAT_LOGS_TABLE_NAME
+          value: "constellation-fabric-staging-combat-logs"
+        - name: PLAYER_STATE_SERVICE_URL
+          value: "http://player-state-service"
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /api/v1/combat/health
+            port: 8080
+          initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: combat-service
+  namespace: constellation
+spec:
+  selector:
+    app: combat
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP

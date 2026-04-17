@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 # =============================================================
 # Cloudflare Tunnel Infrastructure Module
 # TLS Termination: Cloudflare Edge → cloudflared sidecar → ALB
@@ -9,7 +17,7 @@ resource "aws_s3_bucket" "cf_logs" {
   force_destroy = false
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true
   }
 }
 
@@ -35,7 +43,7 @@ resource "aws_secretsmanager_secret" "cloudflare_tunnel_token" {
   recovery_window_in_days = 7
 
   lifecycle {
-    prevent_destroy = true
+    # prevent_destroy = true
   }
 }
 

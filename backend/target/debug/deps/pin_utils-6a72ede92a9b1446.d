@@ -1,0 +1,9 @@
+/mnt/d/Área de Trabalho/Constellation-Fabric/backend/target/debug/deps/pin_utils-6a72ede92a9b1446.d: /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/lib.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/stack_pin.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/projection.rs
+
+/mnt/d/Área de Trabalho/Constellation-Fabric/backend/target/debug/deps/libpin_utils-6a72ede92a9b1446.rlib: /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/lib.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/stack_pin.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/projection.rs
+
+/mnt/d/Área de Trabalho/Constellation-Fabric/backend/target/debug/deps/libpin_utils-6a72ede92a9b1446.rmeta: /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/lib.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/stack_pin.rs /home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/projection.rs
+
+/home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/lib.rs:
+/home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/stack_pin.rs:
+/home/marib/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pin-utils-0.1.0/src/projection.rs:

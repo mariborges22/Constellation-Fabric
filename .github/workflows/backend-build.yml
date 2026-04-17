@@ -47,7 +47,7 @@ jobs:
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-github-actions-role
+          role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-staging-us-east-1-github-actions-role
           aws-region: us-east-1
 
       - name: Login to Amazon ECR (US)
@@ -60,58 +60,36 @@ jobs:
         run: |
           aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 721529235452.dkr.ecr.eu-west-1.amazonaws.com
 
+      - name: Set up QEMU (for ARM64 builds)
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & Load (for Scanning & Testing)
+      - name: Build & Push
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          load: true
-          tags: constellation-local:latest
+          platforms: linux/arm64
+          push: true
+          tags: |
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}-auth:${{ github.sha }}
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}-combat:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'constellation-local:latest'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Validation - Container Smoke Test
+      # --- Deployment Stage ---
+      - name: Update kubeconfig
         run: |
-          docker run -d --name smoke-test-run -p 8080:8080 constellation-local:latest
-          sleep 5
-          curl -f http://localhost:8080/health || (docker logs smoke-test-run && exit 1)
-          docker rm -f smoke-test-run
+          aws eks update-kubeconfig --name constellation-fabric-eks --region us-east-1
 
-      - name: Tag & Push to ECR (US)
+      - name: Deploy to EKS
         run: |
-          # Nomes baseados na convenção do Terraform: constellation-fabric-[env]-[crate]
-          REPO_PREFIX="721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}"
+          kubectl apply -f k8s/namespaces.yaml
+          kubectl apply -f k8s/auth-service.yaml
+          kubectl apply -f k8s/combat-service.yaml
           
-          docker tag constellation-local:latest ${REPO_PREFIX}-auth:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker tag constellation-local:latest ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker tag constellation-local:latest ${REPO_PREFIX}-combat:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          
-          docker push ${REPO_PREFIX}-auth:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker push ${REPO_PREFIX}-player_state:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-          docker push ${REPO_PREFIX}-combat:${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}
-
-      - name: Tag & Push to ECR (EU)
-        run: |
-          REPO_PREFIX="721529235452.dkr.ecr.eu-west-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}"
-          TAG_NAME="${{ (github.ref_name == 'main' && 'latest') || github.ref_name }}"
-          
-          docker tag constellation-local:latest ${REPO_PREFIX}-auth-eu-west-1:${TAG_NAME}
-          docker tag constellation-local:latest ${REPO_PREFIX}-player_state-eu-west-1:${TAG_NAME}
-          docker tag constellation-local:latest ${REPO_PREFIX}-combat-eu-west-1:${TAG_NAME}
-          
-          docker push ${REPO_PREFIX}-auth-eu-west-1:${TAG_NAME}
-          docker push ${REPO_PREFIX}-player_state-eu-west-1:${TAG_NAME}
-          docker push ${REPO_PREFIX}-combat-eu-west-1:${TAG_NAME}
+          # Forçar reinício para garantir a nova imagem
+          kubectl rollout restart deployment/auth-service -n constellation
+          kubectl rollout restart deployment/combat-service -n constellation

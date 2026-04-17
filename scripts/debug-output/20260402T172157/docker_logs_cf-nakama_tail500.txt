@@ -1,0 +1,27 @@
+=== docker_logs_cf-nakama_tail500 ===
+Command: docker logs --tail 500 cf-nakama
+
+{"level":"warn","ts":"2026-04-02T19:35:11.456Z","caller":"server/config.go:326","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.username"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:330","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.password"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:334","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.signing_key"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:338","msg":"WARNING: insecure default parameter value, change this for production!","param":"socket.server_key"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:342","msg":"WARNING: insecure default parameter value, change this for production!","param":"session.encryption_key"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:346","msg":"WARNING: insecure default parameter value, change this for production!","param":"session.refresh_encryption_key"}
+{"level":"warn","ts":"2026-04-02T19:35:11.490Z","caller":"server/config.go:350","msg":"WARNING: insecure default parameter value, change this for production!","param":"runtime.http_key"}
+{"level":"info","ts":"2026-04-02T19:35:11.490Z","caller":"main.go:129","msg":"Nakama starting"}
+{"level":"info","ts":"2026-04-02T19:35:11.490Z","caller":"main.go:130","msg":"Node","name":"nakama","version":"3.22.0+4a4c53d7","runtime":"go1.22.4","cpu":8,"proc":8}
+{"level":"info","ts":"2026-04-02T19:35:11.490Z","caller":"main.go:131","msg":"Data directory","path":"/nakama/data"}
+{"level":"info","ts":"2026-04-02T19:35:11.490Z","caller":"main.go:142","msg":"Database connections","dsns":["root@localhost:26257"]}
+{"level":"fatal","ts":"2026-04-02T19:35:11.584Z","caller":"server/db.go:128","msg":"Error pinging database","error":"failed to connect to `user=root database=nakama`:\n\t127.0.0.1:26257 (localhost): dial error: dial tcp 127.0.0.1:26257: connect: connection refused\n\t[::1]:26257 (localhost): dial error: dial tcp [::1]:26257: connect: connection refused\n\t127.0.0.1:26257 (localhost): dial error: dial tcp 127.0.0.1:26257: connect: connection refused\n\t[::1]:26257 (localhost): dial error: dial tcp [::1]:26257: connect: connection refused"}
+{"level":"warn","ts":"2026-04-02T20:19:47.517Z","caller":"server/config.go:326","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.username"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:330","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.password"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:334","msg":"WARNING: insecure default parameter value, change this for production!","param":"console.signing_key"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:338","msg":"WARNING: insecure default parameter value, change this for production!","param":"socket.server_key"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:342","msg":"WARNING: insecure default parameter value, change this for production!","param":"session.encryption_key"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:346","msg":"WARNING: insecure default parameter value, change this for production!","param":"session.refresh_encryption_key"}
+{"level":"warn","ts":"2026-04-02T20:19:47.521Z","caller":"server/config.go:350","msg":"WARNING: insecure default parameter value, change this for production!","param":"runtime.http_key"}
+{"level":"info","ts":"2026-04-02T20:19:47.521Z","caller":"main.go:129","msg":"Nakama starting"}
+{"level":"info","ts":"2026-04-02T20:19:47.521Z","caller":"main.go:130","msg":"Node","name":"nakama","version":"3.22.0+4a4c53d7","runtime":"go1.22.4","cpu":8,"proc":8}
+{"level":"info","ts":"2026-04-02T20:19:47.521Z","caller":"main.go:131","msg":"Data directory","path":"/nakama/data"}
+{"level":"info","ts":"2026-04-02T20:19:47.521Z","caller":"main.go:142","msg":"Database connections","dsns":["root@localhost:26257"]}
+{"level":"fatal","ts":"2026-04-02T20:19:47.530Z","caller":"server/db.go:128","msg":"Error pinging database","error":"failed to connect to `user=root database=nakama`:\n\t127.0.0.1:26257 (localhost): dial error: dial tcp 127.0.0.1:26257: connect: connection refused\n\t[::1]:26257 (localhost): dial error: dial tcp [::1]:26257: connect: connection refused\n\t127.0.0.1:26257 (localhost): dial error: dial tcp 127.0.0.1:26257: connect: connection refused\n\t[::1]:26257 (localhost): dial error: dial tcp [::1]:26257: connect: connection refused"}

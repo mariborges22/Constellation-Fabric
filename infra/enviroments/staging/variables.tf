@@ -16,11 +16,5 @@ variable "vpc_cidr" {
 variable "domain_name" {
   type        = string
   description = "Domínio principal"
-  default     = "constellation-fabric.com"
-}
-
-variable "db_password" {
-  type        = string
-  description = "Senha para o banco de dados PostgreSQL"
-  sensitive   = true
+  default     = "constellationfabric.com"
 }

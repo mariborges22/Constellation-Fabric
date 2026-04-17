@@ -1,0 +1,8 @@
+=== git_status ===
+Command: git -C /mnt/d/Área de Trabalho/Constellation-Fabric status --short
+
+fatal: detected dubious ownership in repository at '/mnt/d/Área de Trabalho/Constellation-Fabric'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory '/mnt/d/Área de Trabalho/Constellation-Fabric'
+[WARN] Command failed with non-zero exit

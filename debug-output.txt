@@ -1,0 +1,2 @@
+[OK] Debug bundle created: /mnt/d/Área de Trabalho/Constellation-Fabric/scripts/debug-output/constellation-debug-20260402T172157.tar.gz
+Please upload or paste /mnt/d/Área de Trabalho/Constellation-Fabric/scripts/debug-output/constellation-debug-20260402T172157.tar.gz (or the contents of quick_summary.txt and the Nakama logs) for analysis.

@@ -9,6 +9,8 @@ pub mod middleware;
 pub mod state;
 pub mod error;
 
+use aws_sdk_dynamodb::Client as DynamoClient;
+
 // AppState definition
 #[derive(Clone)]
 pub struct AppState {
@@ -16,6 +18,8 @@ pub struct AppState {
     pub rate_limiter: rate_limit::RateLimiter,
     pub bot_detector: bot_detection::BotDetector,
     pub jwt_keys: Option<security::JwtKeys>,
+    pub dynamo_client: DynamoClient,
+    pub table_name: String,
 }
 
 impl AppState {
@@ -23,12 +27,16 @@ impl AppState {
         version: &str,
         rate_limit_requests: usize,
         jwt_keys: Option<security::JwtKeys>,
+        dynamo_client: DynamoClient,
+        table_name: String,
     ) -> Self {
         Self {
             version: version.to_string(),
             rate_limiter: rate_limit::RateLimiter::new(rate_limit_requests),
             bot_detector: bot_detection::BotDetector::new(),
             jwt_keys,
+            dynamo_client,
+            table_name,
         }
     }
 }

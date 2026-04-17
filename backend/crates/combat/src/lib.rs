@@ -9,4 +9,7 @@ pub mod config;
 pub use shared::{Element, ElementalReaction, CombatAction, CombatResult, ActionType};
 pub use character::Character;
 pub use combat::CombatEngine;
-pub use api::{CombatActionRequestV1, CombatResponseV1};
+pub use api::{
+    CombatActionRequestV1, CombatResponseV1, EndMatchRequestV1, EndMatchResponseV1,
+    MatchStateResponseV1, StartMatchRequestV1, StartMatchResponseV1, SubmitTurnRequestV1,
+};

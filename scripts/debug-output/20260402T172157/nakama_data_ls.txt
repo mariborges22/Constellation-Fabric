@@ -1,0 +1,8 @@
+=== nakama_data_ls ===
+Command: ls -la /mnt/d/Área de Trabalho/Constellation-Fabric/nakama/data
+
+total 0
+drwxrwxrwx 1 marib marib 4096 Apr  1 10:34 .
+drwxrwxrwx 1 marib marib 4096 Apr  1 10:34 ..
+-rwxrwxrwx 1 marib marib  354 Apr  1 10:34 config.yml
+drwxrwxrwx 1 marib marib 4096 Apr  1 10:34 modules

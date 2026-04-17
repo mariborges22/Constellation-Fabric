@@ -45,5 +45,38 @@ impl Character {
         self.current_hp -= damage;
         if self.current_hp < 0.0 { self.current_hp = 0.0; }
     }
+
+    // ========================================================================
+    // PROTAGONISTS: THE THREE SIBLINGS
+    // ========================================================================
+
+    /// Kaelen: O irmão da Honestidade (Geo/Defesa)
+    pub fn kaelen(level: i32) -> Self {
+        let mut c = Self::new("Kaelen".to_string(), Element::Geo, level);
+        c.max_hp *= 1.2; // 20% mais HP
+        c.current_hp = c.max_hp;
+        c.defense *= 1.5; // 50% mais Defesa
+        c.attack *= 0.8;  // Menos ataque para balancear
+        c
+    }
+
+    /// Elora: A irmã da Generosidade (Cryo/EM)
+    pub fn elora(level: i32) -> Self {
+        let mut c = Self::new("Elora".to_string(), Element::Cryo, level);
+        c.elemental_mastery = 80.0 + (level as f32 * 5.0);
+        c.max_energy = 120.0; // Mais energia para magias
+        c.max_hp *= 0.9;      // Menos HP (Glass Cannon)
+        c.current_hp = c.max_hp;
+        c
+    }
+
+    /// Rion: O irmão da Lealdade (Electro/Crit)
+    pub fn rion(level: i32) -> Self {
+        let mut c = Self::new("Rion".to_string(), Element::Electro, level);
+        c.critical_rate = 0.25;   // 25% base de Crítico
+        c.critical_damage = 2.0; // 200% de dano crítico base
+        c.attack *= 1.3;         // 30% mais ataque
+        c
+    }
 }
 

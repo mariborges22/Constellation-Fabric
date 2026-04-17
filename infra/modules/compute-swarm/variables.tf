@@ -41,18 +41,6 @@ variable "image_tag" {
   description = "Tag das imagens Docker (para referência em scripts se necessário)"
 }
 
-variable "kinesis_stream_arn" {
-  type        = string
-  description = "ARN do Kinesis Stream para permissões IAM"
-  default     = ""
-}
-
-variable "db_secret_arn" {
-  type        = string
-  description = "ARN do Secrets Manager com a DATABASE_URL"
-  default     = ""
-}
-
 variable "tunnel_secret_arn" {
   type        = string
   description = "ARN do Secrets Manager com o token do Cloudflare Tunnel"

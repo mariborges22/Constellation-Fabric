@@ -1,0 +1,4 @@
+=== lsof_pid_4136 ===
+Command: lsof -p 4136
+
+[WARN] Command failed with non-zero exit

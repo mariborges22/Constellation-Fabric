@@ -1,0 +1,94 @@
+=== nakama_module_constellation ===
+Command: sed -n 1,400p /mnt/d/Área de Trabalho/Constellation-Fabric/nakama/data/modules/constellation.lua
+
+local function combat_base_url()
+  return os.getenv("COMBAT_API_BASE_URL") or "http://combat:8082"
+end
+
+local function decode_payload(payload)
+  if payload == nil or payload == "" then
+    return {}
+  end
+  return nk.json_decode(payload)
+end
+
+local function combat_request(path, method, body_table)
+  local url = combat_base_url() .. path
+  local headers = {
+    ["Content-Type"] = "application/json",
+  }
+  local body = nk.json_encode(body_table)
+  local code, _, response_body = nk.http_request(url, method, headers, body, 10000)
+  if code < 200 or code >= 300 then
+    error(string.format("combat request failed [%d] %s", code, response_body or ""))
+  end
+  if response_body == nil or response_body == "" then
+    return {}
+  end
+  return nk.json_decode(response_body)
+end
+
+local function ensure_fields(tbl, fields)
+  for _, key in ipairs(fields) do
+    if tbl[key] == nil or tbl[key] == "" then
+      error("missing required field: " .. key)
+    end
+  end
+end
+
+local function rpc_start_match(_context, payload)
+  local input = decode_payload(payload)
+  ensure_fields(input, {"match_id", "attacker_id", "defender_id"})
+
+  local response = combat_request("/api/v1/combat/matches", "post", {
+    match_id = input.match_id,
+    attacker_id = input.attacker_id,
+    defender_id = input.defender_id,
+  })
+  return nk.json_encode(response)
+end
+
+local function rpc_submit_turn(_context, payload)
+  local input = decode_payload(payload)
+  ensure_fields(input, {"match_id", "turn_id", "idempotency_key", "player_id", "character_id", "target_id", "action_type"})
+
+  local response = combat_request("/api/v1/combat/matches/turns", "post", {
+    match_id = input.match_id,
+    turn_id = input.turn_id,
+    action = {
+      idempotency_key = input.idempotency_key,
+      player_id = input.player_id,
+      character_id = input.character_id,
+      target_id = input.target_id,
+      action_type = input.action_type,
+    }
+  })
+  return nk.json_encode(response)
+end
+
+local function rpc_get_match_state(_context, payload)
+  local input = decode_payload(payload)
+  ensure_fields(input, {"match_id"})
+
+  local response = combat_request("/api/v1/combat/matches/" .. input.match_id, "get", {})
+  return nk.json_encode(response)
+end
+
+local function rpc_end_match(_context, payload)
+  local input = decode_payload(payload)
+  ensure_fields(input, {"match_id"})
+
+  local response = combat_request("/api/v1/combat/matches/end", "post", {
+    match_id = input.match_id,
+  })
+  return nk.json_encode(response)
+end
+
+local function init_module(_ctx, _nk, initializer)
+  initializer.register_rpc(rpc_start_match, "cf_start_match")
+  initializer.register_rpc(rpc_submit_turn, "cf_submit_turn")
+  initializer.register_rpc(rpc_get_match_state, "cf_get_match_state")
+  initializer.register_rpc(rpc_end_match, "cf_end_match")
+end
+
+init_module = init_module

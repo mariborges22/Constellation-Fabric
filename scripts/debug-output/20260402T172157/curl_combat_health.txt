@@ -1,0 +1,5 @@
+=== curl_combat_health ===
+Command: curl -sS --max-time 5 http://localhost:8082/api/v1/combat/health
+
+curl: (7) Failed to connect to localhost port 8082 after 0 ms: Couldn't connect to server
+[WARN] Command failed with non-zero exit

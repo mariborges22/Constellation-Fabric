@@ -1,0 +1,8 @@
+=== docker_ps ===
+Command: docker ps -a --format table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}
+
+NAMES         IMAGE                      STATUS                     PORTS
+cf-nakama     heroiclabs/nakama:3.22.0   Exited (1) 2 minutes ago   
+cf-redis      redis:6                    Up About an hour           0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+cf-postgres   postgres:13                Up About an hour           0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+zen_lewin     7f1531f2c067               Exited (1) 2 hours ago     

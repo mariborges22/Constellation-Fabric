@@ -6,6 +6,7 @@ pub trait CombatMath: Send + Sync {
     fn calculate_reaction_bonus(&self, attacker: &Character, reaction: ElementalReaction, base_multiplier: f32) -> f32;
     fn calculate_critical_hit(&self, attacker: &Character, base_damage: f32) -> (f32, bool);
     fn calculate_defense_mitigation(&self, defender: &Character, incoming_damage: f32) -> f32;
+    fn calculate_harmony_resonance(&self, party: &[Character]) -> f32;
 }
 
 pub struct AuthoritativeCombatMath;
@@ -40,5 +41,18 @@ impl CombatMath for AuthoritativeCombatMath {
         // Standard defense formula: damage * (1 - Def / (Def + 5 * Level + 500))
         let def_factor = defender.defense / (defender.defense + 5.0 * defender.level as f32 + 500.0);
         incoming_damage * (1.0 - def_factor.min(0.95))
+    }
+
+    fn calculate_harmony_resonance(&self, party: &[Character]) -> f32 {
+        let siblings = ["Kaelen", "Elora", "Rion"];
+        let count = party.iter()
+            .filter(|c| siblings.contains(&c.name.as_str()))
+            .count();
+
+        match count {
+            3 => 1.15, // Ressonância Completa (Família Unida)
+            2 => 1.07, // Ressonância Parcial
+            _ => 1.0,  // Sem bônus
+        }
     }
 }

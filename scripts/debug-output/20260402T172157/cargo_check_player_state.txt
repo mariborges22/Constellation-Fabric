@@ -1,0 +1,5 @@
+=== cargo_check_player_state ===
+Command: bash -lc cd '/mnt/d/Área de Trabalho/Constellation-Fabric' && cargo check --package player-state
+
+error: could not find `Cargo.toml` in `/mnt/d/Área de Trabalho/Constellation-Fabric` or any parent directory
+[WARN] Command failed with non-zero exit

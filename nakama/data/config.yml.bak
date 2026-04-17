@@ -1,0 +1,22 @@
+name: "constellation-nakama"
+data_dir: "/nakama/data"
+
+logger:
+  level: "INFO"
+  stdout: true
+
+session:
+  token_expiry_sec: 86400
+  refresh_token_expiry_sec: 604800
+
+socket:
+  server_key: "constellation_dev_key"
+  port: 7350
+
+runtime:
+  path: "/nakama/data/modules"
+
+console:
+  port: 7351
+  username: "admin"
+  password: "password"

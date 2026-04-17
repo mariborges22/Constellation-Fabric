@@ -1,41 +1,41 @@
 use axum::{routing::{get, post}, Router};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::collections::HashMap;
+use tokio::sync::Mutex;
 use tracing::{info, Level};
-use combat::handlers::{combat_handler, health_check_handler, AppState};
+use combat::handlers::{
+    combat_handler, end_match_handler, get_match_state_handler, health_check_handler, start_match_handler,
+    submit_turn_handler, AppState,
+};
 use combat::CombatEngine;
 use combat::config::Config;
 use event_publisher::publisher::KinesisPublisher;
 
 #[tokio::main]
 async fn main() {
-    let config = Config::from_env();
+    telemetry::init_tracing();
     
-    let log_level = match config.log_level.to_lowercase().as_str() {
-        "debug" => Level::DEBUG,
-        "warn" => Level::WARN,
-        "error" => Level::ERROR,
-        _ => Level::INFO,
-    };
+    info!("⚔️  Constellation Fabric - Equestria Odyssey - Combat Engine v1.1.0");
 
-    tracing_subscriber::fmt().with_max_level(log_level).init();
-    info!("⚔️  Constellation Fabric - Authoritative Combat Engine v1.0.0");
-
-    let publisher = if let Some(name) = &config.kinesis_stream_name {
-        info!("Kinesis integration enabled for stream: {}", name);
-        Some(KinesisPublisher::new(name.clone()).await)
-    } else {
-        info!("Kinesis integration disabled (KINESIS_STREAM_NAME not set)");
-        None
-    };
+    let config = Config::from_env();
+    info!("Config loaded - Port: {}", config.port);
 
     let state = Arc::new(AppState {
-        combat_engine: Arc::new(CombatEngine::new(publisher)),
+        combat_engine: Arc::new(CombatEngine::new()),
+        player_state_api: std::env::var("PLAYER_STATE_API")
+            .unwrap_or_else(|_| "http://localhost:8081/api/v1/players".to_string()),
+        matches: Arc::new(Mutex::new(HashMap::new())),
+        idempotency_cache: Arc::new(Mutex::new(HashMap::new())),
     });
 
     let app = Router::new()
         .route("/api/v1/combat/health", get(health_check_handler))
         .route("/api/v1/combat/attack", post(combat_handler))
+        .route("/api/v1/combat/matches", post(start_match_handler))
+        .route("/api/v1/combat/matches/:match_id", get(get_match_state_handler))
+        .route("/api/v1/combat/matches/turns", post(submit_turn_handler))
+        .route("/api/v1/combat/matches/end", post(end_match_handler))
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));

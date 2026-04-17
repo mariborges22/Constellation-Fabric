@@ -1,0 +1,4 @@
+=== lsof_pid_4182 ===
+Command: lsof -p 4182
+
+[WARN] Command failed with non-zero exit

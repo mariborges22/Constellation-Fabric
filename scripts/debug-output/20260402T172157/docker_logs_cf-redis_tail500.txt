@@ -1,0 +1,13 @@
+=== docker_logs_cf-redis_tail500 ===
+Command: docker logs --tail 500 cf-redis
+
+1:C 02 Apr 2026 18:59:17.468 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+1:C 02 Apr 2026 18:59:17.469 # Redis version=6.2.21, bits=64, commit=00000000, modified=0, pid=1, just started
+1:C 02 Apr 2026 18:59:17.469 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+1:M 02 Apr 2026 18:59:17.469 * monotonic clock: POSIX clock_gettime
+1:M 02 Apr 2026 18:59:17.478 * Running mode=standalone, port=6379.
+1:M 02 Apr 2026 18:59:17.478 # Server initialized
+1:M 02 Apr 2026 18:59:17.478 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+1:M 02 Apr 2026 18:59:17.478 * Ready to accept connections
+1:M 02 Apr 2026 19:35:20.026 # Possible SECURITY ATTACK detected. It looks like somebody is sending POST or Host: commands to Redis. This is likely due to an attacker attempting to use Cross Protocol Scripting to compromise your Redis instance. Connection aborted.
+1:M 02 Apr 2026 20:19:55.626 # Possible SECURITY ATTACK detected. It looks like somebody is sending POST or Host: commands to Redis. This is likely due to an attacker attempting to use Cross Protocol Scripting to compromise your Redis instance. Connection aborted.

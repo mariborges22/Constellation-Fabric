@@ -36,6 +36,8 @@ services:
 
   nakama:
     image: ${ECR_URL}/constellation-staging-nakama:latest
+    environment:
+      - COMBAT_API_BASE_URL=http://combat:8082
     entrypoint:
       - "/bin/sh"
       - "-ecx"

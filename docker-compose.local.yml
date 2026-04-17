@@ -1,0 +1,111 @@
+version: "3.8"
+
+services:
+  # --- INFRAESTRUTURA LOCAL ---
+  
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=nakama
+      - POSTGRES_PASSWORD=local
+      - POSTGRES_DB=nakama
+    # Sem volumes para garantir o 'clean start' conforme solicitado
+
+  redis:
+    image: redis:6-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory" # -inMemory garante que nada seja salvo
+    ports:
+      - "8000:8000"
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
+    depends_on:
+      - dynamodb-local
+
+  # --- SERVIÇOS DO JOGO ---
+
+  nakama:
+    image: heroiclabs/nakama:3.22.0
+    ports:
+      - "7350:7350"
+      - "7349:7349"
+    environment:
+      - "DATABASE_ADDRESS=postgres:5432"
+      - "REDIS_ADDRESS=redis:6379"
+    volumes:
+      - ./nakama/data:/nakama/data:ro
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up --database.address postgres:5432 &&
+        /nakama/nakama --config /nakama/data/config.yml --database.address postgres:5432
+    depends_on:
+      - postgres
+      - redis
+
+  auth:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: constellation-auth:local
+    command: ["/usr/local/bin/auth"]
+    environment:
+      - "PORT=8080"
+      - "DYNAMO_TABLE_NAME=constellation-local"
+      - "AWS_REGION=us-east-1"
+      - "AWS_ACCESS_KEY_ID=local"
+      - "AWS_SECRET_ACCESS_KEY=local"
+      - "DYNAMODB_ENDPOINT_URL=http://dynamodb-local:8000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - dynamodb-local
+
+  player-state:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: constellation-player-state:local
+    command: ["/usr/local/bin/player-state"]
+    environment:
+      - "PORT=8081"
+      - "DYNAMO_TABLE_NAME=constellation-local"
+      - "AWS_REGION=us-east-1"
+      - "AWS_ACCESS_KEY_ID=local"
+      - "AWS_SECRET_ACCESS_KEY=local"
+      - "DYNAMODB_ENDPOINT_URL=http://dynamodb-local:8000"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - dynamodb-local
+
+  combat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: constellation-combat:local
+    command: ["/usr/local/bin/combat"]
+    environment:
+      - "PORT=8082"
+      - "PLAYER_STATE_API=http://player-state:8081/api/v1/players"
+    ports:
+      - "8082:8082"
+    depends_on:
+      - player-state
+
+networks:
+  default:
+    name: constellation-wsl-net
+    driver: bridge

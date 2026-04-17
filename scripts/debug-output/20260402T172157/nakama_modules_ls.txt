@@ -1,0 +1,7 @@
+=== nakama_modules_ls ===
+Command: ls -la /mnt/d/Área de Trabalho/Constellation-Fabric/nakama/data/modules
+
+total 4
+drwxrwxrwx 1 marib marib 4096 Apr  1 10:34 .
+drwxrwxrwx 1 marib marib 4096 Apr  1 10:34 ..
+-rwxrwxrwx 1 marib marib 2916 Apr  1 10:34 constellation.lua

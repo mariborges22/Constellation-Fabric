@@ -1,0 +1,4 @@
+=== pidfile_combat ===
+Command: cat /mnt/d/Área de Trabalho/Constellation-Fabric/scripts/.run-wsl-local/pids/combat.pid
+
+4182

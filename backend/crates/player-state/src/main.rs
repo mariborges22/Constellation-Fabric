@@ -1,31 +1,33 @@
-use player_state::build_router;
+use player_state::{build_router, DynamoPlayerRepository};
 use std::net::SocketAddr;
-use sqlx::postgres::PgPoolOptions;
-use std::time::Duration;
 use tracing::info;
+use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::Client as DynamoClient;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .init();
+    telemetry::init_tracing();
 
-    info!("Constellation Fabric - Player State Service");
+    info!("Constellation Fabric - Equestria Odyssey - Player State Service");
 
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/constellation".to_string());
+    let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+    let client = DynamoClient::new(&config);
+    
+    let table_name = std::env::var("DYNAMO_TABLE_NAME")
+        .unwrap_or_else(|_| "constellation-staging-player-state".to_string());
 
-    let pool = PgPoolOptions::new()
-        .max_connections(3)
-        .acquire_timeout(Duration::from_secs(30))
-        .connect(&database_url)
-        .await?;
+    let use_in_memory = std::env::var("USE_IN_MEMORY_REPO")
+        .map(|v| v.to_lowercase() == "true")
+        .unwrap_or(false);
 
-    info!("Connected to database. Running migrations...");
-    sqlx::migrate!("./migrations").run(&pool).await?;
-    info!("Migrations applied successfully.");
+    let repo: player_state::SharedRepo = if use_in_memory {
+        info!("🚀 Using InMemory Repository (DANGER: NO PERSISTENCE)");
+        std::sync::Arc::new(player_state::InMemoryPlayerRepository::new())
+    } else {
+        info!("Using DynamoDB table: {}", table_name);
+        std::sync::Arc::new(DynamoPlayerRepository::new(client, table_name))
+    };
 
-    let repo = std::sync::Arc::new(player_state::PostgresPlayerRepository::new(pool));
     let app = build_router(repo);
 
     let port = std::env::var("PORT")

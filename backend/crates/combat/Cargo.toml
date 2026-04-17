@@ -14,10 +14,11 @@ player-state = { path = "../player-state" }
 event-publisher = { path = "../event-publisher" }
 shared = { path = "../../shared" }
 rand = "0.8"
+telemetry = { path = "../telemetry" }
 tracing = "0.1"
-tracing-subscriber = "0.3"
 thiserror = "1.0"
 dotenvy = "0.15"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 [lib]
 name = "combat"

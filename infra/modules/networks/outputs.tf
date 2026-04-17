@@ -24,7 +24,12 @@ output "target_group_arn" {
 
 output "public_subnet_ids" {
   value       = aws_subnet.public[*].id
-  description = "IDs das subnets públicas para o Fargate Service"
+  description = "IDs das subnets públicas"
+}
+
+output "private_subnet_ids" {
+  value       = aws_subnet.private[*].id
+  description = "IDs das subnets privadas para os nodes do EKS"
 }
 
 output "ecs_security_group_id" {

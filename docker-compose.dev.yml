@@ -1,0 +1,129 @@
+version: "3.8"
+
+# Development docker-compose for local end-to-end Nakama -> combat validation.
+# Services:
+#  - postgres: Nakama DB
+#  - redis: Nakama realtime backend
+#  - nakama: HeroicLabs Nakama with local modules mounted from repo
+#  - combat: built from backend/Dockerfile; runs the combat binary and listens on 8082
+#  - player-state: lightweight stub (runs the player-state binary from the same backend image)
+#
+# Usage:
+#  - Build images (optional) and start:
+#      docker compose build
+#      docker compose up
+#  - Confirm Nakama is healthy (websocket/api): http://localhost:7350
+#  - Run the smoke test:
+#      export NAKAMA_HTTP=http://localhost:7350
+#      export SERVER_KEY=<server_key_from/nakama/data/config.yml>
+#      ./scripts/smoke-nakama-combat.sh
+#
+# Notes:
+#  - The repo contains nakama/data (config & modules). This compose mounts that into the Nakama container.
+#  - The backend/Dockerfile produces an image with three binaries at /usr/local/bin: auth, player-state, combat.
+#    We build that image here and override the command to run the desired binary per service.
+#  - This compose is purposely simple for local dev. It binds ports to localhost to make testing easy.
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: local
+      POSTGRES_DB: nakama
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    command: ["redis-server", "--save", "60", "1"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nakama:
+    image: heroiclabs/nakama:3.22.0
+    # If you prefer to build a custom Nakama image (module baked in), replace image with a build section.
+    # build:
+    #   context: ./nakama
+    #   dockerfile: Dockerfile
+    ports:
+      - "7350:7350" # Nakama HTTP/GRPC API (exposed for smoke tests)
+      - "7349:7349" # Nakama Console / HTTP (if configured)
+    environment:
+      # Nakama will use postgres:5432 inside this compose network
+      - "DATABASE_ADDRESS=postgres:5432"
+      - "REDIS_ADDRESS=redis:6379"
+      - "COMBAT_API_BASE_URL=http://combat:8082"
+      # If you want to run Nakama with a specific server key, ensure nakama/data/config.yml matches it.
+      # - "SERVER_KEY=defaultkey"
+    volumes:
+      - ./nakama/data:/nakama/data:ro
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up --database.address postgres:5432 &&
+        /nakama/nakama --config /nakama/data/config.yml --database.address postgres:5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  combat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: constellation-local:latest
+    command: ["/usr/local/bin/combat"]
+    environment:
+      # The combat binary accepts env vars from its Config::from_env implementation.
+      - "PLAYER_STATE_API=http://player-state:8080/api/v1/players"
+      - "PORT=8082"
+      # Kinesis disabled by default for local dev; set KINESIS_STREAM_NAME to enable publishing
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8082/api/v1/combat/health || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      player-state:
+        condition: service_started
+
+  player-state:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: constellation-local:latest
+    command: ["/usr/local/bin/player-state"]
+    environment:
+      - "PORT=8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: constellation-dev-net
+    driver: bridge

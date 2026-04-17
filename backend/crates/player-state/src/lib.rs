@@ -6,7 +6,7 @@ use axum::{
     Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
 use std::sync::Arc;
 use uuid::Uuid;
 use validator::Validate;
@@ -18,7 +18,7 @@ pub use error::{PlayerStateError, PlayerStateResult};
 // MODELS
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
     pub id: Uuid,
     pub username: String,
@@ -30,7 +30,7 @@ pub struct Player {
     pub region: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerStateResponse {
     pub id: Uuid,
     pub health: i32,
@@ -56,6 +56,12 @@ pub struct UpdatePlayerStateRequest {
     pub level: Option<i32>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InitPlayerRequest {
+    pub initial_character: String,
+    pub account_id: String,
+}
+
 // ============================================================================
 // HEXAGONAL ARCHITECTURE: PORTS (TRAITS)
 // ============================================================================
@@ -65,105 +71,241 @@ pub trait PlayerRepository: Send + Sync {
     async fn create_player(&self, req: CreatePlayerRequest) -> PlayerStateResult<Player>;
     async fn get_player(&self, player_id: Uuid) -> PlayerStateResult<Player>;
     async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> PlayerStateResult<PlayerStateResponse>;
+    async fn initialize_team(&self, player_id: Uuid, req: InitPlayerRequest) -> PlayerStateResult<()>;
     async fn check_idempotency(&self, key: Uuid) -> PlayerStateResult<Option<(serde_json::Value, i16)>>;
     async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> PlayerStateResult<()>;
 }
 
 // ============================================================================
-// HEXAGONAL ARCHITECTURE: ADAPTERS (POSTGRES)
+// HEXAGONAL ARCHITECTURE: ADAPTERS (DYNAMODB)
 // ============================================================================
 
-pub struct PostgresPlayerRepository {
-    pool: PgPool,
+pub struct DynamoPlayerRepository {
+    client: DynamoClient,
+    table_name: String,
 }
 
-impl PostgresPlayerRepository {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+impl DynamoPlayerRepository {
+    pub fn new(client: DynamoClient, table_name: String) -> Self {
+        Self { client, table_name }
     }
 }
 
 #[async_trait]
-impl PlayerRepository for PostgresPlayerRepository {
-    async fn create_player(&self, req: CreatePlayerRequest) -> Result<Player, StatusCode> {
-        sqlx::query_as::<_, Player>(
-            "INSERT INTO players (username, email) VALUES ($1, $2) 
-             RETURNING id, username, email, level, experience, health, max_health, region"
-        )
-        .bind(&req.username)
-        .bind(&req.email)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| {
-            if let Some(db_err) = e.as_database_error() {
-                if db_err.is_unique_violation() {
-                    return PlayerStateError::Conflict("Player already exists".to_string());
-                }
-            }
-            tracing::error!("Database error creating player: {}", e);
-            PlayerStateError::DatabaseError(e.to_string())
+impl PlayerRepository for DynamoPlayerRepository {
+    async fn create_player(&self, req: CreatePlayerRequest) -> PlayerStateResult<Player> {
+        let id = Uuid::new_v4();
+        let player = Player {
+            id,
+            username: req.username.clone(),
+            email: req.email.clone(),
+            level: 1,
+            experience: 0,
+            health: 100,
+            max_health: 100,
+            region: "us-east-1".to_string(), // Default
+        };
+
+        let item = serde_dynamo::to_item(&player)
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        let mut request = self.client.put_item()
+            .table_name(&self.table_name)
+            .item("pk", AttributeValue::S(format!("PLAYER#{}", id)))
+            .item("sk", AttributeValue::S("METADATA".to_string()))
+            .item("username_index", AttributeValue::S(format!("USERNAME#{}", req.username)))
+            .item("email_index", AttributeValue::S(format!("EMAIL#{}", req.email)));
+
+        for (k, v) in item {
+            request = request.item(k, v);
+        }
+
+        request.send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        Ok(player)
+    }
+
+    async fn get_player(&self, player_id: Uuid) -> PlayerStateResult<Player> {
+        let res = self.client.get_item()
+            .table_name(&self.table_name)
+            .key("pk", AttributeValue::S(format!("PLAYER#{}", player_id)))
+            .key("sk", AttributeValue::S("METADATA".to_string()))
+            .send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        if let Some(item) = res.item {
+            let player: Player = serde_dynamo::from_item(item)
+                .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+            Ok(player)
+        } else {
+            Err(PlayerStateError::NotFound(player_id.to_string()))
+        }
+    }
+
+    async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> PlayerStateResult<PlayerStateResponse> {
+        // Implementação simplificada de update no Dynamo
+        // Nota: Em produção, usaríamos UpdateItem com expressões de atualização
+        let mut player = self.get_player(player_id).await?;
+        
+        if let Some(h) = req.health { player.health = h; }
+        if let Some(e) = req.experience { player.experience += e; }
+        if let Some(l) = req.level { player.level = l; }
+
+        let item = serde_dynamo::to_item(&player)
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        let mut request = self.client.put_item()
+            .table_name(&self.table_name)
+            .item("pk", AttributeValue::S(format!("PLAYER#{}", player_id)))
+            .item("sk", AttributeValue::S("METADATA".to_string()));
+
+        for (k, v) in item {
+            request = request.item(k, v);
+        }
+
+        request.send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        Ok(PlayerStateResponse {
+            id: player.id,
+            health: player.health,
+            level: player.level,
+            experience: player.experience,
         })
     }
 
-    async fn get_player(&self, player_id: Uuid) -> Result<Player, StatusCode> {
-        sqlx::query_as::<_, Player>(
-            "SELECT id, username, email, level, experience, health, max_health, region 
-             FROM players WHERE id = $1"
-        )
-        .bind(player_id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error getting player: {}", e);
-            PlayerStateError::NotFound(player_id.to_string())
-        })
+    async fn initialize_team(&self, player_id: Uuid, req: InitPlayerRequest) -> PlayerStateResult<()> {
+        // Criamos o registro da equipe no DynamoDB (Single Table Design)
+        // PK: PLAYER#id, SK: TEAM#ACTIVE
+        
+        self.client.put_item()
+            .table_name(&self.table_name)
+            .item("pk", AttributeValue::S(format!("PLAYER#{}", player_id)))
+            .item("sk", AttributeValue::S("TEAM#ACTIVE".to_string()))
+            .item("active_leader", AttributeValue::S(req.initial_character))
+            .item("unlocked_siblings", AttributeValue::Ss(vec![
+                "Kaelen".to_string(), "Elora".to_string(), "Rion".to_string()
+            ]))
+            .item("created_at", AttributeValue::N(chrono::Utc::now().timestamp().to_string()))
+            .send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+            
+        // Log de telemetria
+        tracing::info!(player_id = %player_id, sibling = %req.initial_character, "Equipe inicializada com sucesso");
+        
+        Ok(())
     }
 
-    async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> Result<PlayerStateResponse, StatusCode> {
-        sqlx::query_as::<_, PlayerStateResponse>(
-            "UPDATE players 
-             SET health = COALESCE($1, health),
-                 experience = experience + COALESCE($2, 0),
-                 level = COALESCE($3, level),
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4
-             RETURNING id, health, level, experience"
-        )
-        .bind(req.health)
-        .bind(req.experience)
-        .bind(req.level)
-        .bind(player_id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error updating player state: {}", e);
-            PlayerStateError::DatabaseError(e.to_string())
-        })
+    async fn check_idempotency(&self, key: Uuid) -> PlayerStateResult<Option<(serde_json::Value, i16)>> {
+        let res = self.client.get_item()
+            .table_name(&self.table_name)
+            .key("pk", AttributeValue::S(format!("IDEM#{}", key)))
+            .key("sk", AttributeValue::S("STATE".to_string()))
+            .send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+
+        if let Some(item) = res.item {
+            let body: String = item.get("response_body").and_then(|v| v.as_s().ok()).cloned().unwrap_or_default();
+            let status: i16 = item.get("status_code").and_then(|v| v.as_n().ok()).and_then(|n| n.parse::<i16>().ok()).unwrap_or(200);
+            let val = serde_json::from_str(&body).unwrap_or_default();
+            Ok(Some((val, status)))
+        } else {
+            Ok(None)
+        }
     }
 
-    async fn check_idempotency(&self, key: Uuid) -> Result<Option<(serde_json::Value, i16)>, StatusCode> {
-        sqlx::query_as(
-            "SELECT response_body, status_code FROM idempotency_keys WHERE key = $1"
-        )
-        .bind(key)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))
-    }
-
-    async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> Result<(), StatusCode> {
-        sqlx::query(
-            "INSERT INTO idempotency_keys (key, response_body, status_code) VALUES ($1, $2, $3)"
-        )
-        .bind(key)
-        .bind(response)
-        .bind(status as i16)
-        .execute(&self.pool)
-        .await
-        .map(|_| ())
-        .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))
+    async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> PlayerStateResult<()> {
+        let body = response.to_string();
+        self.client.put_item()
+            .table_name(&self.table_name)
+            .item("pk", AttributeValue::S(format!("IDEM#{}", key)))
+            .item("sk", AttributeValue::S("STATE".to_string()))
+            .item("response_body", AttributeValue::S(body))
+            .item("status_code", AttributeValue::N(status.to_string()))
+            .item("ttl", AttributeValue::N((chrono::Utc::now().timestamp() + 86400).to_string())) // 24h TTL
+            .send().await
+            .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
+        Ok(())
     }
 }
+
+// ============================================================================
+// HEXAGONAL ARCHITECTURE: ADAPTERS (IN-MEMORY MOCK)
+// ============================================================================
+
+use std::collections::HashMap;
+use tokio::sync::Mutex;
+
+pub struct InMemoryPlayerRepository {
+    players: Mutex<HashMap<Uuid, Player>>,
+    idempotency: Mutex<HashMap<Uuid, (serde_json::Value, i16)>>,
+}
+
+impl InMemoryPlayerRepository {
+    pub fn new() -> Self {
+        Self {
+            players: Mutex::new(HashMap::new()),
+            idempotency: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+#[async_trait]
+impl PlayerRepository for InMemoryPlayerRepository {
+    async fn create_player(&self, req: CreatePlayerRequest) -> PlayerStateResult<Player> {
+        let id = Uuid::new_v4();
+        let player = Player {
+            id,
+            username: req.username,
+            email: req.email,
+            level: 1,
+            experience: 0,
+            health: 100,
+            max_health: 100,
+            region: "local".to_string(),
+        };
+        self.players.lock().await.insert(id, player.clone());
+        Ok(player)
+    }
+
+    async fn get_player(&self, player_id: Uuid) -> PlayerStateResult<Player> {
+        self.players.lock().await.get(&player_id).cloned()
+            .ok_or_else(|| PlayerStateError::NotFound(player_id.to_string()))
+    }
+
+    async fn update_player_state(&self, player_id: Uuid, req: UpdatePlayerStateRequest) -> PlayerStateResult<PlayerStateResponse> {
+        let mut players = self.players.lock().await;
+        let player = players.get_mut(&player_id)
+            .ok_or_else(|| PlayerStateError::NotFound(player_id.to_string()))?;
+
+        if let Some(h) = req.health { player.health = h; }
+        if let Some(e) = req.experience { player.experience += e; }
+        if let Some(l) = req.level { player.level = l; }
+
+        Ok(PlayerStateResponse {
+            id: player.id,
+            health: player.health,
+            level: player.level,
+            experience: player.experience,
+        })
+    }
+
+    async fn initialize_team(&self, _player_id: Uuid, _req: InitPlayerRequest) -> PlayerStateResult<()> {
+        // En um mock simples, apenas retornamos OK
+        Ok(())
+    }
+
+    async fn check_idempotency(&self, key: Uuid) -> PlayerStateResult<Option<(serde_json::Value, i16)>> {
+        Ok(self.idempotency.lock().await.get(&key).cloned())
+    }
+
+    async fn save_idempotency(&self, key: Uuid, response: &serde_json::Value, status: u16) -> PlayerStateResult<()> {
+        self.idempotency.lock().await.insert(key, (response.clone(), status as i16));
+        Ok(())
+    }
+}
+
 
 // ============================================================================
 // ROUTER & HANDLERS
@@ -176,6 +318,7 @@ pub fn build_router(repo: SharedRepo) -> Router {
         .route("/api/v1/players/health", get(handlers::health_check_handler))
         .route("/api/v1/players", post(handlers::create_player_handler))
         .route("/api/v1/players/:id", get(handlers::get_player_handler))
+        .route("/api/v1/players/:id/init", post(handlers::init_player_handler))
         .route("/api/v1/players/:id/state", put(handlers::update_player_state_handler))
         .with_state(repo)
 }
@@ -231,5 +374,14 @@ pub mod handlers {
             let _ = repo.save_idempotency(key, &res_body, StatusCode::OK.as_u16()).await;
         }
         Ok((StatusCode::OK, Json(state)).into_response())
+    }
+
+    pub async fn init_player_handler(
+        State(repo): State<SharedRepo>,
+        Path(player_id): Path<Uuid>,
+        Json(req): Json<InitPlayerRequest>,
+    ) -> PlayerStateResult<impl IntoResponse> {
+        repo.initialize_team(player_id, req).await?;
+        Ok((StatusCode::OK, Json(serde_json::json!({"status": "initialized"}))))
     }
 }

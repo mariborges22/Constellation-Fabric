@@ -1,0 +1,8 @@
+=== local_logs_ls ===
+Command: ls -la /mnt/d/Área de Trabalho/Constellation-Fabric/scripts/.run-wsl-local/logs
+
+total 0
+drwxrwxrwx 1 marib marib 4096 Apr  2 16:36 .
+drwxrwxrwx 1 marib marib 4096 Apr  2 16:35 ..
+-rwxrwxrwx 1 marib marib  110 Apr  2 17:21 combat.log
+-rwxrwxrwx 1 marib marib  110 Apr  2 17:21 player-state.log

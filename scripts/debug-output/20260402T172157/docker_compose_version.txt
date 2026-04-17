@@ -1,0 +1,4 @@
+=== docker_compose_version ===
+Command: docker-compose --version
+
+docker-compose version 1.29.2, build unknown

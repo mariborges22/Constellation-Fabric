@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: auth-service
+  namespace: constellation
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::721529235452:role/constellation-fabric-staging-us-east-1-auth-irsa"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: constellation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      serviceAccountName: auth-service
+      containers:
+      - name: auth
+        image: 721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-staging-auth:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DYNAMO_TABLE_NAME
+          value: "constellation-fabric-staging-player-state"
+        - name: AWS_REGION
+          value: "us-east-1"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: constellation
+spec:
+  selector:
+    app: auth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
