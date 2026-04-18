@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.81-bookworm AS chef
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91.1-bookworm AS chef
 COPY --from=tonistiigi/xx / /
 WORKDIR /usr/src/app
 
@@ -24,11 +24,12 @@ ARG TARGETPLATFORM
 COPY --from=planner /usr/src/app/recipe.json recipe.json
 
 # Build dependencies with cross-compilation
-RUN xx-cargo chef cook --release --recipe-path recipe.json
+# Precisamos passar o --target explicitamente para o cargo-chef
+RUN xx-cargo chef cook --release --target $(xx-cargo --print-target-triple) --recipe-path recipe.json
 
 # Build application
 COPY . .
-RUN xx-cargo build --release --package auth --package player-state --package combat && \
+RUN xx-cargo build --release --target $(xx-cargo --print-target-triple) --package auth --package player-state --package combat && \
     xx-verify target/$(xx-cargo --print-target-triple)/release/auth
 
 # Final Stage
