@@ -3,7 +3,7 @@ FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91.1-book
 COPY --from=tonistiigi/xx / /
 WORKDIR /usr/src/app
 
-# Install build dependencies for cross-compilation
+# Install build dependencies for the host and target
 RUN apt-get update && apt-get install -y \
     clang \
     lld \
@@ -23,13 +23,20 @@ FROM chef AS builder
 ARG TARGETPLATFORM
 COPY --from=planner /usr/src/app/recipe.json recipe.json
 
-# Build dependencies with cross-compilation
-# Precisamos passar o --target explicitamente para o cargo-chef
-RUN xx-cargo chef cook --release --target $(xx-cargo --print-target-triple) --recipe-path recipe.json
+# --- Cross-Compilation Environment Setup ---
+# We tell pkg-config and openssl exactly where the ARM64 libs are
+RUN xx-cargo --setup-target-env
+
+# Build dependencies
+RUN export PKG_CONFIG_ALLOW_CROSS=1 && \
+    export OPENSSL_DIR=$(xx-info sysroot)usr && \
+    xx-cargo chef cook --release --recipe-path recipe.json
 
 # Build application
 COPY . .
-RUN xx-cargo build --release --target $(xx-cargo --print-target-triple) --package auth --package player-state --package combat && \
+RUN export PKG_CONFIG_ALLOW_CROSS=1 && \
+    export OPENSSL_DIR=$(xx-info sysroot)usr && \
+    xx-cargo build --release --package auth --package player-state --package combat && \
     xx-verify target/$(xx-cargo --print-target-triple)/release/auth
 
 # Final Stage
@@ -43,7 +50,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ARG TARGETPLATFORM
-# Copy binaries using the correct target triple path
 COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/auth /usr/local/bin/auth
 COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/player-state /usr/local/bin/player-state
 COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/combat /usr/local/bin/combat
