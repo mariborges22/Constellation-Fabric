@@ -1,43 +1,39 @@
 # syntax=docker/dockerfile:1
-FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91.1-bookworm AS chef
-COPY --from=tonistiigi/xx / /
+FROM --platform=$BUILDPLATFORM rust:1.91-bookworm AS chef
+RUN cargo install cargo-chef
 WORKDIR /usr/src/app
 
-# Install build dependencies for the host and target
-RUN apt-get update && apt-get install -y \
-    clang \
-    lld \
+# Install cross-compilation toolchain for aarch64 with multiarch support for libssl
+RUN dpkg --add-architecture arm64 && \
+    apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    libc6-dev-arm64-cross \
+    libssl-dev:arm64 \
     pkg-config \
-    libssl-dev \
-    && xx-apt-get install -y \
-    gcc \
-    g++ \
-    libc6-dev \
-    libssl-dev
+    && rm -rf /var/lib/apt/lists/*
 
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM chef AS builder 
-ARG TARGETPLATFORM
+FROM chef AS builder
+WORKDIR /usr/src/app
 COPY --from=planner /usr/src/app/recipe.json recipe.json
 
-# --- Cross-Compilation Environment Setup ---
-# We tell pkg-config and openssl exactly where the ARM64 libs are
-RUN xx-cargo --setup-target-env
+# Environment variables for cross-compilation
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
+    CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
+    PKG_CONFIG_ALLOW_CROSS=1 \
+    PKG_CONFIG_PATH_aarch64_unknown_linux_gnu=/usr/lib/aarch64-linux-gnu/pkgconfig
 
-# Build dependencies
-RUN export PKG_CONFIG_ALLOW_CROSS=1 && \
-    export OPENSSL_DIR=$(xx-info sysroot)usr && \
-    xx-cargo chef cook --release --recipe-path recipe.json
+# Cook dependencies for ARM64
+RUN cargo chef cook --release --target aarch64-unknown-linux-gnu --recipe-path recipe.json
 
-# Build application
+# Build the application
 COPY . .
-RUN export PKG_CONFIG_ALLOW_CROSS=1 && \
-    export OPENSSL_DIR=$(xx-info sysroot)usr && \
-    xx-cargo build --release --package auth --package player-state --package combat && \
-    xx-verify target/$(xx-cargo --print-target-triple)/release/auth
+RUN cargo build --release --target aarch64-unknown-linux-gnu --package auth --package player-state --package combat
 
 # Final Stage
 FROM debian:bookworm-slim
@@ -49,10 +45,10 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-ARG TARGETPLATFORM
-COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/auth /usr/local/bin/auth
-COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/player-state /usr/local/bin/player-state
-COPY --from=builder /usr/src/app/target/$(xx-cargo --print-target-triple)/release/combat /usr/local/bin/combat
+# Copy the ARM64 binaries
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/auth /usr/local/bin/auth
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/player-state /usr/local/bin/player-state
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/combat /usr/local/bin/combat
 
 EXPOSE 8080
 CMD ["auth"]
