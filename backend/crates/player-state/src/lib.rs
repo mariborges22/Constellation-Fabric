@@ -106,7 +106,7 @@ impl PlayerRepository for DynamoPlayerRepository {
             region: "us-east-1".to_string(), // Default
         };
 
-        let item = serde_dynamo::to_item(&player)
+        let item: std::collections::HashMap<String, AttributeValue> = serde_dynamo::to_item(&player)
             .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
 
         let mut request = self.client.put_item()
@@ -152,7 +152,7 @@ impl PlayerRepository for DynamoPlayerRepository {
         if let Some(e) = req.experience { player.experience += e; }
         if let Some(l) = req.level { player.level = l; }
 
-        let item = serde_dynamo::to_item(&player)
+        let item: std::collections::HashMap<String, AttributeValue> = serde_dynamo::to_item(&player)
             .map_err(|e| PlayerStateError::DatabaseError(e.to_string()))?;
 
         let mut request = self.client.put_item()
@@ -183,7 +183,7 @@ impl PlayerRepository for DynamoPlayerRepository {
             .table_name(&self.table_name)
             .item("pk", AttributeValue::S(format!("PLAYER#{}", player_id)))
             .item("sk", AttributeValue::S("TEAM#ACTIVE".to_string()))
-            .item("active_leader", AttributeValue::S(req.initial_character))
+            .item("active_leader", AttributeValue::S(req.initial_character.clone()))
             .item("unlocked_siblings", AttributeValue::Ss(vec![
                 "Kaelen".to_string(), "Elora".to_string(), "Rion".to_string()
             ]))
