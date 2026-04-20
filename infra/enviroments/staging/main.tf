@@ -24,6 +24,7 @@ module "compute_eks_us" {
   min_size       = 1
   player_state_table_arn = module.database_global.player_state_table_arn
   combat_logs_table_arn  = module.database_global.combat_logs_table_arn
+  github_actions_role_arn = module.security.github_actions_role_arn
 }
 
 module "compute_eks_eu" {
@@ -43,6 +44,7 @@ module "compute_eks_eu" {
   min_size       = 1
   player_state_table_arn = module.database_global.player_state_table_arn
   combat_logs_table_arn  = module.database_global.combat_logs_table_arn
+  github_actions_role_arn = module.security.github_actions_role_arn
 }
 
 module "networks_us" {

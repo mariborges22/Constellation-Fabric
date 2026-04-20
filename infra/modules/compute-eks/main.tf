@@ -78,22 +78,18 @@ resource "aws_eks_addon" "ebs_csi" {
 # Access Entry para garantir que o Terraform/GitHub consiga gerenciar o cluster
 resource "aws_eks_access_entry" "terraform_admin" {
   cluster_name      = aws_eks_cluster.main.name
-  principal_arn     = data.aws_iam_role.github_actions.arn
+  principal_arn     = var.github_actions_role_arn
   type              = "STANDARD"
 }
 
 resource "aws_eks_access_policy_association" "terraform_admin" {
   cluster_name  = aws_eks_cluster.main.name
   policy_arn    = "arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = data.aws_iam_role.github_actions.arn
+  principal_arn = var.github_actions_role_arn
 
   access_scope {
     type = "cluster"
   }
-}
-
-data "aws_iam_role" "github_actions" {
-  name = "github-actions-oidc-role"
 }
 
 data "tls_certificate" "eks" {

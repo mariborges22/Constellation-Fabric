@@ -1,62 +1,63 @@
 variable "project_name" {
+  description = "Nome do projeto para prefixo de recursos"
   type        = string
-  description = "Nome do projeto"
 }
 
 variable "environment" {
-  type        = string
   description = "Ambiente (staging/production)"
+  type        = string
 }
 
 variable "region" {
+  description = "Região da AWS"
   type        = string
-  description = "AWS Region"
 }
 
 variable "vpc_id" {
+  description = "VPC ID onde o EKS será implantado"
   type        = string
-  description = "VPC ID"
 }
 
 variable "subnet_ids" {
+  description = "Lista de subnets privadas para os nodes"
   type        = list(string)
-  description = "Subnets para o cluster (geralmente privadas)"
 }
 
 variable "instance_types" {
+  description = "Tipos de instância para o node group"
   type        = list(string)
   default     = ["t3.medium"]
-  description = "Tipos de instância para o Node Group"
 }
 
 variable "desired_size" {
-  type    = number
-  default = 1
+  description = "Quantidade desejada de nodes"
+  type        = number
+  default     = 1
 }
 
 variable "max_size" {
-  type    = number
-  default = 3
+  description = "Quantidade máxima de nodes"
+  type        = number
+  default     = 2
 }
 
 variable "min_size" {
-  type    = number
-  default = 1
-}
-
-variable "image_tag" {
-  type    = string
-  default = "latest"
+  description = "Quantidade mínima de nodes"
+  type        = number
+  default     = 1
 }
 
 variable "player_state_table_arn" {
+  description = "ARN da tabela DynamoDB de estado do jogador"
   type        = string
-  description = "ARN da tabela DynamoDB player-state"
-  default     = ""
 }
 
 variable "combat_logs_table_arn" {
+  description = "ARN da tabela DynamoDB de logs de combate"
   type        = string
-  description = "ARN da tabela DynamoDB combat-logs"
-  default     = ""
+}
+
+variable "github_actions_role_arn" {
+  description = "ARN da Role do GitHub Actions para permissão no EKS"
+  type        = string
 }
