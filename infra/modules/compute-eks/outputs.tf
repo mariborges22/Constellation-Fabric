@@ -13,3 +13,15 @@ output "cluster_certificate_authority_data" {
 output "oidc_provider_arn" {
   value = aws_iam_openid_connect_provider.eks.arn
 }
+
+output "alb_controller_role_arn" {
+  value = aws_iam_role.alb_controller.arn
+}
+
+output "auth_irsa_role_arn" {
+  value = aws_iam_role.auth_irsa.arn
+}
+
+output "combat_irsa_role_arn" {
+  value = aws_iam_role.combat_irsa.arn
+}

@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nakama
+  namespace: constellation
+  labels:
+    app: nakama
+spec:
+  type: ClusterIP
+  ports:
+    - port: 7349
+      targetPort: 7349
+      name: console
+    - port: 7350
+      targetPort: 7350
+      name: api
+  selector:
+    app: nakama
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nakama
+  namespace: constellation
+  labels:
+    app: nakama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nakama
+  template:
+    metadata:
+      labels:
+        app: nakama
+    spec:
+      containers:
+      - name: nakama
+        image: heroiclabs/nakama:3.22.0
+        command:
+        - "/bin/sh"
+        - "-ecx"
+        - >
+          /nakama/nakama migrate up --database.address postgres:nakama_password_change_me@nakama-db:5432/nakama &&
+          /nakama/nakama --config /nakama/data/local.yml --database.address postgres:nakama_password_change_me@nakama-db:5432/nakama
+        ports:
+        - containerPort: 7349
+          name: console
+        - containerPort: 7350
+          name: api
+        - containerPort: 7351
+          name: rpc
+        healthCheck:
+          httpGet:
+            path: /healthcheck
+            port: 7350
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

@@ -120,4 +120,105 @@ resource "aws_iam_role_policy" "combat_dynamo_access" {
   })
 }
 
+# IRSA Role for EBS CSI Driver
+resource "aws_iam_role" "ebs_csi_driver" {
+  name = "${var.project_name}-${var.environment}-${var.region}-ebs-csi-driver"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${replace(aws_eks_cluster.main.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi_driver.name
+}
+
+# IRSA Role for AWS Load Balancer Controller
+resource "aws_iam_role" "alb_controller" {
+  name = "${var.project_name}-${var.environment}-${var.region}-alb-controller"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${replace(aws_eks_cluster.main.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+        }
+      }
+    }]
+  })
+}
+
+# Attach a policy with required permissions for ALB Controller
+resource "aws_iam_role_policy" "alb_controller_policy" {
+  name = "alb-controller-minimal-policy"
+  role = aws_iam_role.alb_controller.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:CreateServiceLinkedRole",
+          "ec2:DescribeAccountAttributes",
+          "ec2:DescribeAddresses",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:DescribeInternetGateways",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeInstances",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeTags",
+          "ec2:GetCoipPoolUsage",
+          "ec2:DescribeCoipPools",
+          "elasticloadbalancing:*",
+          "acm:DescribeCertificate",
+          "acm:ListCertificates",
+          "acm:GetCertificate",
+          "iam:ListServerCertificates",
+          "iam:GetServerCertificate",
+          "cognito-idp:DescribeUserPool",
+          "waf-regional:GetWebACLForResource",
+          "waf-regional:GetWebACL",
+          "waf-regional:AssociateWebACL",
+          "waf-regional:DisassociateWebACL",
+          "wafv2:GetWebACLForResource",
+          "wafv2:GetWebACL",
+          "wafv2:AssociateWebACL",
+          "wafv2:DisassociateWebACL",
+          "shield:DescribeProtection",
+          "shield:GetSubscriptionState",
+          "shield:DeleteProtection",
+          "shield:CreateProtection",
+          "shield:DescribeSubscription",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListAccountAliases"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 data "aws_caller_identity" "current" {}

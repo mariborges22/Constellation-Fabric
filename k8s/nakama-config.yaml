@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nakama-config
+  namespace: constellation
+data:
+  local.yml: |
+    name: nakama-server
+    database:
+      address: "postgres:nakama_password_change_me@nakama-db:5432/nakama"
+    logger:
+      level: "info"
+      format: "json"
+    session:
+      encryption_key: "default-encryption-key-change-me"
+    socket:
+      port: 7350
+    console:
+      port: 7349
+      username: "admin"
+      password: "password"

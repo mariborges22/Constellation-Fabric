@@ -15,7 +15,7 @@ COPY crates/ crates/
 COPY shared/ shared/
 
 # Build application using BuildKit cache mounts for extreme speed in subsequent builds
-# This caches /usr/local/cargo/registry and the target directory
+# Build application using BuildKit cache mounts for extreme speed in subsequent builds
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/app/target \
     cargo build --release --package auth --package player-state --package combat
