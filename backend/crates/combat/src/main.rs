@@ -10,7 +10,6 @@ use combat::handlers::{
 };
 use combat::CombatEngine;
 use combat::config::Config;
-use event_publisher::publisher::KinesisPublisher;
 
 #[tokio::main]
 async fn main() {

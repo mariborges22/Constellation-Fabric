@@ -1,5 +1,2 @@
-pub mod kinesis;
-
-pub use kinesis::KinesisPublisher;
-
+// Publisher interface and implementations
 pub struct Module;
