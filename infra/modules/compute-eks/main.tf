@@ -43,6 +43,7 @@ resource "aws_eks_node_group" "main" {
     min_size     = var.min_size
   }
 
+  ami_type       = "AL2023_ARM_64_STANDARD"
   instance_types = var.instance_types
   capacity_type  = "SPOT" # Custo Reduzido conforme solicitado
 
