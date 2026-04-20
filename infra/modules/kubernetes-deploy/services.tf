@@ -15,6 +15,8 @@ resource "kubernetes_deployment" "auth" {
     namespace = "constellation"
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = 2
     selector {
@@ -31,7 +33,7 @@ resource "kubernetes_deployment" "auth" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.auth.metadata[0].name
+        service_account_name = kubernetes_service_account.auth.metadata[0].name  
         container {
           name  = "auth"
           image = var.auth_image
@@ -109,6 +111,8 @@ resource "kubernetes_deployment" "combat" {
     name      = "combat-service"
     namespace = "constellation"
   }
+
+  wait_for_rollout = false
 
   spec {
     replicas = 2

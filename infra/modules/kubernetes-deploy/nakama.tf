@@ -133,6 +133,8 @@ resource "kubernetes_deployment" "nakama" {
     namespace = "constellation"
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = 1
     selector {
@@ -152,7 +154,7 @@ resource "kubernetes_deployment" "nakama" {
         container {
           name  = "nakama"
           image = "heroiclabs/nakama:3.22.0"
-          
+
           command = ["/bin/sh", "-ecx", "/nakama/nakama migrate up --database.address postgres:nakama_password_change_me@nakama-db:5432/nakama && /nakama/nakama --config /nakama/data/local.yml --database.address postgres:nakama_password_change_me@nakama-db:5432/nakama"]
 
           port {
