@@ -84,7 +84,7 @@ resource "aws_eks_access_entry" "terraform_admin" {
 
 resource "aws_eks_access_policy_association" "terraform_admin" {
   cluster_name  = aws_eks_cluster.main.name
-  policy_arn    = "arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   principal_arn = var.github_actions_role_arn
 
   access_scope {

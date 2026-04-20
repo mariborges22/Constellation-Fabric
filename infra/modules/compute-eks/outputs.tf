@@ -25,3 +25,9 @@ output "auth_irsa_role_arn" {
 output "combat_irsa_role_arn" {
   value = aws_iam_role.combat_irsa.arn
 }
+
+# Output para forçar a dependência do Access Entry
+output "access_entry_ready" {
+  value      = aws_eks_access_policy_association.terraform_admin.id
+  depends_on = [aws_eks_access_policy_association.terraform_admin]
+}
