@@ -2,7 +2,7 @@
 # --------------------------------------------------------------------------------
 # 1. Planner Stage
 # --------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91-bookworm AS planner
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91.1-bookworm AS planner
 WORKDIR /usr/src/app
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
@@ -10,7 +10,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 # --------------------------------------------------------------------------------
 # 2. Cacher Stage
 # --------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91-bookworm AS cacher
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91.1-bookworm AS cacher
 WORKDIR /usr/src/app
 COPY --from=planner /usr/src/app/recipe.json recipe.json
 
@@ -32,7 +32,7 @@ RUN cargo chef cook --release --target aarch64-unknown-linux-gnu --recipe-path r
 # --------------------------------------------------------------------------------
 # 3. Builder Stage
 # --------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM rust:1.91-bookworm AS builder
+FROM --platform=$BUILDPLATFORM rust:1.91.1-bookworm AS builder
 WORKDIR /usr/src/app
 
 RUN apt-get update && apt-get install -y \
@@ -54,9 +54,10 @@ RUN cargo build --release --target aarch64-unknown-linux-gnu \
     --package auth --package player-state --package combat
 
 # --------------------------------------------------------------------------------
-# 4. Final Stage
+# 4. Final Stage: Runtime environment
 # --------------------------------------------------------------------------------
-FROM --platform=linux/arm64 debian:bookworm-slim
+ARG TARGETPLATFORM
+FROM --platform=$TARGETPLATFORM debian:bookworm-slim
 WORKDIR /usr/local/bin
 ENV PORT=8080
 
