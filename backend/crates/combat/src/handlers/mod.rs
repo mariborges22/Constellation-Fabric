@@ -66,7 +66,7 @@ pub async fn submit_turn_handler(
     State(state): State<Arc<AppState>>,
     Json(req): Json<SubmitTurnRequestV1>,
 ) -> CombatResult<impl IntoResponse> {
-    if req.action.idempotency_key.is_empty() {
+    if req.action.idempotency_key.is_nil() {
         return Err(CombatError::InvalidAction("Missing idempotency key".to_string()));
     }
 
@@ -89,7 +89,7 @@ pub async fn submit_turn_handler(
 
     let result = state
         .combat_engine
-        .execute_action(&session.attacker, &mut session.defender, req.action.action_type);
+        .execute_action(&session.attacker, &mut session.defender, req.action.action_type, &[session.attacker.clone()]);
 
     session.last_turn_id = req.turn_id;
     session.last_action = Some(req.action.clone());
