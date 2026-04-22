@@ -1,27 +1,62 @@
 # syntax=docker/dockerfile:1
-FROM rust:1.91-bookworm AS builder
-
+# --------------------------------------------------------------------------------
+# 1. Planner Stage
+# --------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91-bookworm AS planner
 WORKDIR /usr/src/app
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Install system dependencies
+# --------------------------------------------------------------------------------
+# 2. Cacher Stage
+# --------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:latest-rust-1.91-bookworm AS cacher
+WORKDIR /usr/src/app
+COPY --from=planner /usr/src/app/recipe.json recipe.json
+
 RUN apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    libc6-dev-arm64-cross \
     pkg-config \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy workspace information
-COPY Cargo.toml Cargo.lock ./
-COPY crates/ crates/
-COPY shared/ shared/
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+ENV CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+ENV PKG_CONFIG_ALLOW_CROSS=1
 
-# Build application using BuildKit cache mounts for extreme speed in subsequent builds
-# Build application using BuildKit cache mounts for extreme speed in subsequent builds
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/src/app/target \
-    cargo build --release --package auth --package player-state --package combat
+RUN cargo chef cook --release --target aarch64-unknown-linux-gnu --recipe-path recipe.json
 
-# Final Stage
-FROM debian:bookworm-slim
+# --------------------------------------------------------------------------------
+# 3. Builder Stage
+# --------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM rust:1.91-bookworm AS builder
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    libc6-dev-arm64-cross \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+COPY --from=cacher /usr/src/app/target /usr/src/app/target
+COPY --from=cacher /usr/local/cargo/registry /usr/local/cargo/registry
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV PKG_CONFIG_ALLOW_CROSS=1
+
+RUN cargo build --release --target aarch64-unknown-linux-gnu \
+    --package auth --package player-state --package combat
+
+# --------------------------------------------------------------------------------
+# 4. Final Stage
+# --------------------------------------------------------------------------------
+FROM --platform=linux/arm64 debian:bookworm-slim
 WORKDIR /usr/local/bin
 ENV PORT=8080
 
@@ -30,10 +65,9 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy binaries from builder stage
-COPY --from=builder /usr/src/app/target/release/auth /usr/local/bin/auth
-COPY --from=builder /usr/src/app/target/release/player-state /usr/local/bin/player-state
-COPY --from=builder /usr/src/app/target/release/combat /usr/local/bin/combat
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/auth /usr/local/bin/auth
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/player-state /usr/local/bin/player-state
+COPY --from=builder /usr/src/app/target/aarch64-unknown-linux-gnu/release/combat /usr/local/bin/combat
 
 EXPOSE 8080
 CMD ["auth"]

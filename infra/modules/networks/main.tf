@@ -71,19 +71,8 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# --- NAT Gateway for Private Subnets (Required for EKS Nodes) ---
-resource "aws_eip" "nat" {
-  domain = "vpc"
-  tags   = { Name = "${var.project_name}-${var.environment}-${var.region}-nat-eip" }
-}
-
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id # NAT GW deve ficar na subnet pública
-  tags          = { Name = "${var.project_name}-${var.environment}-${var.region}-nat-gw" }
-
-  depends_on = [aws_internet_gateway.igw]
-}
+# NAT Gateway removido para economia de custos em Staging
+# O roteamento agora é feito via Internet Gateway diretamente.
 
 # Roteamento Privado (Nodes → NAT Gateway → Internet)
 resource "aws_route_table" "private" {
@@ -91,10 +80,10 @@ resource "aws_route_table" "private" {
   tags   = { Name = "${var.project_name}-${var.environment}-${var.region}-private-rt" }
 }
 
-resource "aws_route" "private_nat_gateway" {
+resource "aws_route" "private_to_igw" {
   route_table_id         = aws_route_table.private.id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.main.id
+  gateway_id             = aws_internet_gateway.igw.id
 }
 
 resource "aws_route_table_association" "private" {
