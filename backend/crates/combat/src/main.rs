@@ -13,7 +13,7 @@ use combat::config::Config;
 
 #[tokio::main]
 async fn main() {
-    telemetry::init_tracing();
+    telemetry::tracing::init_tracing();
     
     info!("⚔️  Constellation Fabric - Equestria Odyssey - Combat Engine v1.1.0");
 

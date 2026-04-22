@@ -6,7 +6,7 @@ use aws_sdk_dynamodb::Client as DynamoClient;
 
 #[tokio::main]
 async fn main() {
-    telemetry::init_tracing();
+    telemetry::tracing::init_tracing();
 
     info!("🎮 Constellation Fabric - Equestria Odyssey - Auth Service");
 
