@@ -17,6 +17,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 jsonwebtoken = "9.2"
 aws-config = "1.1"
 aws-sdk-dynamodb = "1.1"
+aws-sdk-secretsmanager = "1.1"
 serde_dynamo = "4.2"
 telemetry = { path = "../telemetry" }
 thiserror = "1.0"
