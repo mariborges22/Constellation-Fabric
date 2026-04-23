@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: constellation-services
+  namespace: constellation
+  labels:
+    release: prometheus # Esta label é obrigatória para o prometheus-operator achar este arquivo
+spec:
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - auth
+          - combat
+          - player-state
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 10s
+  namespaceSelector:
+    matchNames:
+      - constellation

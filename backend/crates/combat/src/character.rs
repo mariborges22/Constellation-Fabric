@@ -17,6 +17,7 @@ pub struct Character {
     pub critical_damage: f32,
     pub energy: f32,
     pub max_energy: f32,
+    pub active_effects: Vec<crate::effects::StatusEffect>,
 }
 
 impl Character {
@@ -38,12 +39,38 @@ impl Character {
             critical_damage: 1.5,
             energy: 0.0,
             max_energy: 100.0,
+            active_effects: Vec::new(),
         }
     }
+    
     pub fn is_alive(&self) -> bool { self.current_hp > 0.0 }
+    
     pub fn take_damage(&mut self, damage: f32) {
         self.current_hp -= damage;
         if self.current_hp < 0.0 { self.current_hp = 0.0; }
+    }
+
+    /// Processes status effects: applies DoT damage and returns total damage taken. Decrements duration.
+    pub fn tick_effects(&mut self) -> f32 {
+        let mut total_dot_damage = 0.0;
+        
+        for effect in &mut self.active_effects {
+            match effect {
+                crate::effects::StatusEffect::Burning { dps, .. } => total_dot_damage += *dps,
+                crate::effects::StatusEffect::ElectroCharged { dps, .. } => total_dot_damage += *dps,
+                _ => {}
+            }
+            effect.decrement_duration();
+        }
+        
+        if total_dot_damage > 0.0 {
+            self.take_damage(total_dot_damage);
+        }
+        
+        // Remove expired effects
+        self.active_effects.retain(|e| e.duration() > 0);
+        
+        total_dot_damage
     }
 
     // ========================================================================

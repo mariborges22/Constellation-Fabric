@@ -1,0 +1,14 @@
+prometheus:
+  prometheusSpec:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 300m
+    # Roda apenas em memória para validação rápida (sem travar em discos EBS)
+    storageSpec: {}
+# Desliga o disparador de alertas para economizar ~200MB de RAM do nó
+alertmanager:
+  enabled: false

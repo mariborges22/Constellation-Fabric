@@ -31,6 +31,15 @@ impl CombatEngine {
         let (reaction, multiplier) = attacker.element.calculate_reaction(defender.element);
         let reaction_dmg = self.math.calculate_reaction_bonus(attacker, reaction, base_dmg * multiplier);
 
+        // Apply Status Effects based on reaction
+        match reaction {
+            ElementalReaction::Burning => defender.active_effects.push(crate::effects::StatusEffect::Burning { duration_turns: 3, dps: attacker.elemental_mastery * 0.5 }),
+            ElementalReaction::Frozen => defender.active_effects.push(crate::effects::StatusEffect::Frozen { duration_turns: 1 }),
+            ElementalReaction::Superconduct => defender.active_effects.push(crate::effects::StatusEffect::Superconduct { duration_turns: 2, defense_reduction: 0.4 }),
+            ElementalReaction::ElectroCharged => defender.active_effects.push(crate::effects::StatusEffect::ElectroCharged { duration_turns: 2, dps: attacker.elemental_mastery * 0.8 }),
+            _ => {}
+        }
+
         // 3. Handle Critical Hits
         let (crit_dmg, is_critical) = self.math.calculate_critical_hit(attacker, reaction_dmg);
         

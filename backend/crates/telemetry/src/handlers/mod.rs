@@ -1,5 +1,10 @@
-﻿use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::State, http::StatusCode, Json, response::IntoResponse};
 use std::sync::Arc;
+use crate::metrics::Metrics;
+
+pub async fn metrics_handler() -> impl IntoResponse {
+    Metrics::gather_metrics()
+}
 
 #[derive(Clone)]
 pub struct ServiceState { pub service_name: String }

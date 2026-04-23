@@ -26,6 +26,10 @@ output "combat_irsa_role_arn" {
   value = aws_iam_role.combat_irsa.arn
 }
 
+output "cluster_autoscaler_role_arn" {
+  value = aws_iam_role.cluster_autoscaler.arn
+}
+
 # Output para forçar a dependência do Access Entry
 output "access_entry_ready" {
   value      = aws_eks_access_policy_association.terraform_admin.id

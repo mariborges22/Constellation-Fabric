@@ -320,6 +320,7 @@ pub fn build_router(repo: SharedRepo) -> Router {
         .route("/api/v1/players/:id", get(handlers::get_player_handler))
         .route("/api/v1/players/:id/init", post(handlers::init_player_handler))
         .route("/api/v1/players/:id/state", put(handlers::update_player_state_handler))
+        .route("/metrics", get(telemetry::handlers::metrics_handler))
         .with_state(repo)
 }
 

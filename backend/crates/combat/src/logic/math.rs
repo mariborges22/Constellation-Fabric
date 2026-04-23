@@ -38,8 +38,16 @@ impl CombatMath for AuthoritativeCombatMath {
     }
 
     fn calculate_defense_mitigation(&self, defender: &Character, incoming_damage: f32) -> f32 {
+        let mut effective_defense = defender.defense;
+        
+        for effect in &defender.active_effects {
+            if let crate::effects::StatusEffect::Superconduct { defense_reduction, .. } = effect {
+                effective_defense *= 1.0 - defense_reduction;
+            }
+        }
+
         // Standard defense formula: damage * (1 - Def / (Def + 5 * Level + 500))
-        let def_factor = defender.defense / (defender.defense + 5.0 * defender.level as f32 + 500.0);
+        let def_factor = effective_defense / (effective_defense + 5.0 * defender.level as f32 + 500.0);
         incoming_damage * (1.0 - def_factor.min(0.95))
     }
 

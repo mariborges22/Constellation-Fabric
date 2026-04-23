@@ -158,6 +158,58 @@ resource "helm_release" "aws_lb_controller" {
   ]
 }
 
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+  namespace  = "kube-system"
+
+  set {
+    name  = "args[0]"
+    value = "--kubelet-insecure-tls"
+  }
+
+  depends_on = [
+    module.compute_eks_us
+  ]
+}
+
+resource "helm_release" "cluster_autoscaler" {
+  name       = "cluster-autoscaler"
+  repository = "https://kubernetes.github.io/autoscaler"
+  chart      = "cluster-autoscaler"
+  namespace  = "kube-system"
+
+  set {
+    name  = "autoDiscovery.clusterName"
+    value = module.compute_eks_us.cluster_name
+  }
+
+  set {
+    name  = "awsRegion"
+    value = "us-east-1"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = "cluster-autoscaler"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.compute_eks_us.cluster_autoscaler_role_arn
+  }
+
+  depends_on = [
+    module.compute_eks_us
+  ]
+}
+
 # --- Automated Deploy of Services ---
 
 module "kubernetes_deploy_us" {

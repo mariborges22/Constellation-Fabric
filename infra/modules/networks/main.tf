@@ -45,10 +45,11 @@ resource "aws_subnet" "public" {
 
 # Subnets Privadas (Onde o backend Rust vai rodar)
 resource "aws_subnet" "private" {
-  count             = 2
-  vpc_id            = aws_vpc.game_vpc.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index)
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  count                   = 2
+  vpc_id                  = aws_vpc.game_vpc.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
   tags = {
     Name                                            = "${var.project_name}-${var.environment}-private-${count.index}"
     "kubernetes.io/cluster/${var.project_name}-eks" = "shared"

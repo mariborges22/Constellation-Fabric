@@ -14,6 +14,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/v1/auth/register", post(crate::handlers::register))
         .route("/api/v1/auth/verify", post(crate::handlers::verify_token))
         .route("/api/v1/auth/refresh", post(crate::handlers::refresh_token))
+        .route("/metrics", get(telemetry::handlers::metrics_handler))
         .with_state(state)
 }
 

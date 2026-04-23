@@ -76,6 +76,11 @@ resource "aws_eks_addon" "ebs_csi" {
   service_account_role_arn    = aws_iam_role.ebs_csi_driver.arn
 }
 
+resource "aws_eks_addon" "cloudwatch_observability" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "amazon-cloudwatch-observability"
+}
+
 # Access Entry para garantir que o Terraform/GitHub consiga gerenciar o cluster
 resource "aws_eks_access_entry" "terraform_admin" {
   cluster_name      = aws_eks_cluster.main.name

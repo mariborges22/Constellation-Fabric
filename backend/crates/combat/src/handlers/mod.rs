@@ -14,6 +14,7 @@ use crate::{
     SubmitTurnRequestV1,
 };
 use crate::error::{CombatError, CombatResult};
+use crate::persistence::CombatRepository;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -21,6 +22,7 @@ pub struct AppState {
     pub player_state_api: String,
     pub matches: Arc<Mutex<HashMap<Uuid, MatchSession>>>,
     pub idempotency_cache: Arc<Mutex<HashMap<Uuid, CombatResponseV1>>>,
+    pub combat_repo: Arc<dyn CombatRepository>,
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +33,7 @@ pub struct MatchSession {
     pub attacker: Character,
     pub defender: Character,
     pub last_action: Option<CombatActionRequestV1>,
+    pub turn_manager: crate::TurnManager,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -87,9 +90,36 @@ pub async fn submit_turn_handler(
         return Err(CombatError::InvalidAction("Out-of-order turn submission".to_string()));
     }
 
+    if !session.turn_manager.can_act(req.action.actor_id, session.attacker.id, session.defender.id) {
+        return Err(CombatError::InvalidAction("It is not this character's turn".to_string()));
+    }
+
+    // Validate Energy for Burst
+    let active_character = if session.turn_manager.current_actor == crate::turn_manager::TurnActor::Player {
+        &mut session.attacker
+    } else {
+        &mut session.defender
+    };
+
+    if req.action.action_type == crate::ActionType::ElementalBurst && active_character.energy < active_character.max_energy {
+        return Err(CombatError::InvalidAction("Not enough energy for Elemental Burst".to_string()));
+    }
+
+    crate::TurnManager::generate_energy(active_character, req.action.action_type);
+
     let result = state
         .combat_engine
         .execute_action(&session.attacker, &mut session.defender, req.action.action_type, &[session.attacker.clone()]);
+
+    session.turn_manager.advance_turn();
+    
+    // Process DOTs at the start of the next character's turn
+    let next_active = if session.turn_manager.current_actor == crate::turn_manager::TurnActor::Player {
+        &mut session.attacker
+    } else {
+        &mut session.defender
+    };
+    next_active.tick_effects();
 
     session.last_turn_id = req.turn_id;
     session.last_action = Some(req.action.clone());
@@ -102,6 +132,13 @@ pub async fn submit_turn_handler(
         enemy_state: vec![session.defender.clone()],
         idempotency_key: req.action.idempotency_key,
     };
+
+    // Fire and forget persistence to not block the fast-path, or await it if strict consistency is needed.
+    // For combat logs, strict consistency is preferred so we don't lose hits on crashes.
+    if let Err(e) = state.combat_repo.save_match_result(req.match_id, req.turn_id, &result).await {
+        tracing::error!("Failed to persist combat log: {}", e);
+        // Continue anyway to not ruin player experience, or return error.
+    }
 
     drop(matches);
     state
@@ -150,6 +187,7 @@ pub async fn start_match_handler(
         attacker,
         defender,
         last_action: None,
+        turn_manager: crate::TurnManager::new(),
     };
 
     state.matches.lock().await.insert(req.match_id, session);
@@ -188,6 +226,11 @@ pub async fn end_match_handler(
         .get_mut(&req.match_id)
         .ok_or_else(|| CombatError::CharacterNotFound("Match not found".to_string()))?;
     session.active = false;
+
+    // Sync player HP back to player-state service upon match end.
+    if let Err(e) = state.combat_repo.update_player_hp(session.attacker.id, session.attacker.current_hp, req.match_id).await {
+        tracing::error!("Failed to sync player HP at match end: {}", e);
+    }
 
     Ok(Json(EndMatchResponseV1 {
         match_id: req.match_id,
