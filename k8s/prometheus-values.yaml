@@ -7,8 +7,15 @@ prometheus:
       limits:
         memory: 512Mi
         cpu: 300m
-    # Roda apenas em memória para validação rápida (sem travar em discos EBS)
-    storageSpec: {}
+    # Persistência habilitada com EBS gp3
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
 # Desliga o disparador de alertas para economizar ~200MB de RAM do nó
 alertmanager:
   enabled: false

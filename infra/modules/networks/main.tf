@@ -57,6 +57,7 @@ resource "aws_subnet" "private" {
   }
 }
 
+
 # Roteamento Público
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.game_vpc.id

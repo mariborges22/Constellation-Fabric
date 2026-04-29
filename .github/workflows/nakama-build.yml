@@ -1,0 +1,64 @@
+name: Nakama Build & Push
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - 'nakama/**'
+      - '.github/workflows/nakama-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Push (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'production') || 'staging' }}
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::721529235452:role/constellation-fabric-github-actions-role
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push (ARM64)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nakama
+          file: ./nakama/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}-nakama:latest
+            721529235452.dkr.ecr.us-east-1.amazonaws.com/constellation-fabric-${{ (github.ref_name == 'main' && 'production') || 'staging' }}-nakama:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name constellation-fabric-eks --region us-east-1
+
+      - name: Refresh Nakama Deployment
+        run: |
+          # O Nakama é gerenciado pelo Helm, mas forçamos o restart para carregar a nova imagem 'latest'
+          # se o Terraform não detectar mudança no Chart.
+          kubectl rollout restart statefulset/nakama -n constellation || true
+          kubectl rollout restart deployment/nakama -n constellation || true

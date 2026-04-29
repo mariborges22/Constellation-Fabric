@@ -16,7 +16,7 @@ variable "environment" {
 
 variable "services" {
   type    = list(string)
-  default = ["auth", "combat", "event-publisher"]
+  default = ["auth", "combat", "event-publisher", "nakama"]
 }
 
 resource "aws_ecr_repository" "services" {
